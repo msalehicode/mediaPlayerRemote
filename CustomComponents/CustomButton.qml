@@ -28,6 +28,8 @@ Item
     property int setButtonFontsize: 12;
     signal buttonClicked;
 
+    signal buttonHeld;
+    signal buttonReleasesd;
 
 
     //to point to another function/lamda from outside for change clicked behaver multiple time
@@ -82,6 +84,11 @@ Item
                         buttonClicked()
                         runActionHandler()
                     }
+                    onPressAndHold:
+                    {
+                        buttonHeld()
+                    }
+                    onReleased: buttonReleasesd()
                 }
             }
 

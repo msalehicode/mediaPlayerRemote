@@ -24,6 +24,7 @@ qt_add_qml_module(appmediaPlayerRemote
         QML_FILES Pages/SettingsPage.qml
 RESOURCES CustomComponents/qmldir
 QML_FILES CustomComponents/CustomButton.qml CustomComponents/CustomButtonWithIcon.qml CustomComponents/CustomCheckBox.qml CustomComponents/CustomCollapsiblePanel.qml CustomComponents/CustomCombobox.qml CustomComponents/CustomComboboxWithIcon.qml CustomComponents/CustomPopupMenu.qml CustomComponents/CustomPopupMessage.qml CustomComponents/CustomProccessBar.qml CustomComponents/CustomSwitch.qml CustomComponents/CustomSwitchText.qml CustomComponents/CustomTextInput.qml CustomComponents/CustomTimer.qml
+QML_FILES CustomComponents/CustomSlider.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

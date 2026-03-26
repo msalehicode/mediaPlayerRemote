@@ -11,7 +11,7 @@ Page
         height:50
         Label
         {
-            text:"Control Page"
+            text:"Control"
             color:"white"
             font.pixelSize: 30
             anchors.centerIn: parent
@@ -20,7 +20,7 @@ Page
 
     Rectangle
     {
-        color:"green"
+        color:"grey"
         anchors.fill: parent
         Label
         {

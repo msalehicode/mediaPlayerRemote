@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import "./Pages"
+import "./CustomComponents"
 
 Window {
     width: 380
     height: 840
     visible: true
-    title: qsTr("Bluetooth Remote")
+    title: qsTr("MediaPlayer Android Remote")
 
 Rectangle
 {
@@ -16,6 +17,7 @@ Rectangle
     // Button
     // {
     //     text:"back"
+    //     visible: false
     //     onClicked:
     //     {
     //         // if(mainStack>0)
@@ -39,37 +41,71 @@ Rectangle
         // initialItem: controlPage
     }
 
-    Row
+
+    Rectangle
     {
+        color:"crimson"
+        id:bottomIndicator
         width:parent.width
-        height:60
+        height:70
         anchors.bottom: parent.bottom
-        spacing: 10
-        Button
+        Row
         {
-            text:"connection"
-            onClicked:
+            spacing: 10
+            width: implicitWidth
+            height: parent.height
+            anchors.horizontalCenter: parent.horizontalCenter
+            CustomButton
             {
-                mainStack.push("Pages/ConnectionPage.qml")
+                setButtonText: "Connection"
+                setWidth: 100
+                setButtonFontsize: 15
+                setHeight: 50
+                setButtonBackColor: "black"
+                setButtonFontColor: "white"
+                setButtonBorderColor: "black"
+                // anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                onButtonClicked:
+                {
+                    mainStack.push("Pages/ConnectionPage.qml")
+                }
             }
-        }
-        Button
-        {
-            text:"control"
-            onClicked:
+            CustomButton
             {
-                mainStack.push("Pages/ControlPage.qml")
+                setButtonText: "Control"
+                setWidth: 100
+                setButtonFontsize: 15
+                setHeight: 50
+                setButtonBackColor: "black"
+                setButtonFontColor: "white"
+                setButtonBorderColor: "transparent"
+                // anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                onButtonClicked:
+                {
+                    mainStack.push("Pages/ControlPage.qml")
+                }
             }
-        }
-        Button
-        {
-            text:"settings"
-            onClicked:
+            CustomButton
             {
-                mainStack.push("Pages/SettingsPage.qml")
+                setButtonText: "Settings"
+                setWidth: 100
+                setButtonFontsize: 15
+                setHeight: 50
+                setButtonBackColor: "black"
+                setButtonFontColor: "white"
+                setButtonBorderColor: "transparent"
+                // anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                onButtonClicked:
+                {
+                    mainStack.push("Pages/SettingsPage.qml")
+                }
             }
         }
     }
+
 
 }
 
@@ -80,8 +116,6 @@ Rectangle
     Component.onCompleted:
     {
         console.log("completed")
-        // mainStack.push("Pages/ConnectionPage.qml")
-
     }
 
 
