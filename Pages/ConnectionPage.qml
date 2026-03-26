@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import "../CustomComponents"
+import "scripts.js" as Script
 Page
 {
     anchors.fill: parent
@@ -39,62 +40,101 @@ Page
                 {
                     anchors.fill: parent
                     spacing: 20
+                    Label
+                    {
+                        id:connectionStatus
+                        font.pixelSize: 20
+                        color: "white"
+                        font.bold: true
+                        text: "Status: " + Script.convertBtStatusToString(backend.btStatus)
+                    }
+
                     Row
                     {
                         width:parent.width
                         height:60
                         spacing:20
-                        Button
+                        CustomButton
                         {
-                            text:"start scan"
-                            onClicked: backend.run(true)
+                            setButtonText: "Start Scan"
+                            setWidth: 70
+                            setButtonFontsize: 15
+                            setHeight: 50
+                            setButtonBackColor: "cyan"
+                            setButtonFontColor: "black"
+                            setButtonBorderColor: "transparent"
+                            onButtonClicked:
+                            {
+                                backend.run(true)
+                            }
                         }
-                        Button
+                        CustomButton
                         {
-                            text:"stop scan"
-                            onClicked: backend.run(false)
+                            setButtonText: "Stop Scan"
+                            setWidth: 70
+                            setButtonFontsize: 15
+                            setHeight: 50
+                            setButtonBackColor: "cyan"
+                            setButtonFontColor: "black"
+                            setButtonBorderColor: "transparent"
+                            onButtonClicked:
+                            {
+                                backend.run(false)
+                            }
                         }
                     }
 
+
+                    Label
+                    {
+                        text:"found devices:"
+                        font.pixelSize: 20
+                        color:"white"
+                    }
                     Rectangle
                     {
                         color:"grey"
                         width:parent.width
                         height:200
-                        Label
-                        {
-                            text:"found devices:"
-                            font.pixelSize: 20
-                            color:"white"
-                        }
+
 
                         ListView
                         {
                             anchors.fill: parent
-                            // model: backend.devices
+                            model: backend.devices
                             spacing: 10
                             delegate: Rectangle
                             {
-                                color:"blue"
-                                width:parent.width
+                                color:"black"
+                                width:parent.width/1.5
+                                anchors.horizontalCenter: parent.horizontalCenter
                                 height:30
                                 Label
                                 {
                                     text:modelData
                                     font.pixelSize: 20
+                                    color: "white"
+                                    anchors.centerIn: parent
                                 }
                                 MouseArea
                                 {
                                     anchors.fill: parent
                                     onClicked:
                                     {
-                                        console.log("clicked on ", modelData)
+                                        backend.connectToHost(modelData)
                                     }
                                 }
                             }
                         }
                     }
 
+
+                    Label
+                    {
+                        text:"received commands:"
+                        font.pixelSize: 20
+                        color:"white"
+                    }
                     Rectangle
                     {
                         color:"green"
@@ -102,7 +142,7 @@ Page
                         height:200
                         Label
                         {
-                            text:"message"//+backend.receivedMessage
+                            text:backend.receivedMessage
                             font.pixelSize: 20
                             color:"white"
                         }
@@ -111,10 +151,11 @@ Page
                     // custom
                     CustomTextInput
                     {
+                        id:textInput
                         setWidth: parent.width
                         setHeight: 70
                         setBgColor: "purple"
-                        setTitleText: "Enter Message:"
+                        setTitleText: "Enter command:"
                         CustomButton
                         {
                             setWidth: parent.width/5
@@ -128,7 +169,11 @@ Page
                             setButtonText: "Send"
                             setButtonBackColor: "black"
                             setButtonFontColor: "red"
-
+                            onButtonClicked:
+                            {
+                                backend.send(textInput.theText)
+                                textInput.theText=""
+                            }
 
                         }
                     }

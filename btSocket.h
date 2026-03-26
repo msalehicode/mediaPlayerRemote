@@ -38,12 +38,10 @@ public:
         connect(m_socket, &QBluetoothSocket::connected, this, &BtSocket::sConnected);
         connect(m_socket, &QBluetoothSocket::disconnected, this, &BtSocket::sDisconnected);
         connect(m_socket, &QBluetoothSocket::readyRead, this, &BtSocket::sDataReceived);
-        qInfo() << "right before errorOccurSignal Slot";
         connect(m_socket, &QBluetoothSocket::errorOccurred, this, &BtSocket::sError);
-        qInfo() << "after erroroccursingal slot";
 
         const QUuid serviceUuid("e8e10f95-1a70-4b27-9ccf-02010264e9c8");
-        // e8e10f95-1a70-4b27-9ccf-02010264e9c8
+        // const QUuid serviceUuid("c8e96402-0102-cf9c-274b-701a950fe1e8");
         qInfo() << "Attempting to connect to service with UUID:" << serviceUuid.toString();
 
         m_socket->connectToService(m_device->address(), serviceUuid);
@@ -130,10 +128,10 @@ private slots:
 
     void sError(QBluetoothSocket::SocketError err)
     {
-        qInfo () << "error hanppend.";
+        qInfo () << "error hanppend. error=" << err;
         // qWarning() << "socket error:" << err;
-        // qWarning() << "Error description:" << m_socket->errorString();
-        emit error("erorr on socket");
+        qWarning() << "Error description:" << m_socket->errorString();
+        emit error(m_socket->errorString());
     }
 
 private:

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import "../CustomComponents"
+import "scripts.js" as Script
 Page
 {
     // anchors.fill: parent
@@ -22,22 +23,7 @@ Page
         Label
         {
             id:connectionStatus
-            text:"Status: connected."
-            // text: "Status: " + (function(status) {
-            //     switch(status) {
-            //         case -1: return "Unknown";
-            //         case 10: return "Adaptor Not Found";
-            //         case 11: return "Failed";
-            //         case 20: return "Permission Denied";
-            //         case 21: return "Asking Permission";
-            //         case 22: return "Permission Granted";
-            //         case 30: return "Inactive";
-            //         case 31: return "Discoverable";
-            //         case 32: return "Loading";
-            //         case 33: return "Active";
-            //         default: return "Unknown Status";
-            //     }
-            // })(root.connectionMode==="wifi" ? backend.wifiStatus : backend.btStatus)
+            text: "Status: " + Script.convertBtStatusToString(backend.btStatus)
             color:"white"
             font.pixelSize: 15
         }
