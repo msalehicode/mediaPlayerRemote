@@ -2,43 +2,15 @@ import QtQuick
 import QtQuick.Controls
 import "../CustomComponents"
 import "scripts.js" as Script
+// i m p  o r t  A p p   1 . 0
+
 Page
 {
     // anchors.fill: parent
     id:root
-    property string connectionMode: "bluetooth" //or wifi
-
-    header: Rectangle
-    {
-        color:"black"
-        width:parent.width
-        height:50
-        Label
-        {
-            text:"Control Page"
-            color:"white"
-            font.pixelSize: 20
-            anchors.centerIn: parent
-        }
-        Label
-        {
-            id:connectionStatus
-            text: "Status: " + Script.convertBtStatusToString(backend.btStatus)
-            color:"white"
-            font.pixelSize: 15
-        }
-    }
 
 
-    function changeVolume(value)
-    {
-        console.log("chaning volume.. val=",value)
-    }
 
-    function changeBrightness(value)
-    {
-        console.log("chaning bgithness val=",value)
-    }
 
     Rectangle
     {
@@ -106,6 +78,7 @@ Page
                     onButtonClicked:
                     {
                         console.log("seek back 15s")
+                        backend.send("seekBack");
                     }
                 }
 
@@ -123,6 +96,7 @@ Page
                     onButtonClicked:
                     {
                         console.log("seek forth 15s")
+                        backend.send("seekForth");
                     }
                 }
 
@@ -141,7 +115,7 @@ Page
                     anchors.horizontalCenter: parent.horizontalCenter
                     onButtonClicked:
                     {
-                        console.log("seek back 15s")
+                        backend.send("speedUp");
                     }
                 }
 
@@ -158,7 +132,7 @@ Page
                     anchors.horizontalCenter: parent.horizontalCenter
                     onButtonClicked:
                     {
-                        console.log("seek forth 15s")
+                        backend.send("speedDown");
                     }
                 }
 
@@ -183,25 +157,11 @@ Page
                         setButtonBackColor: "transparent"
                         setButtonFontColor: "white"
                         setButtonBorderColor: "transparent"
-                        onButtonHeld: console.log("speeding up 2x")
+                        onButtonHeld: backend.send("heldSpeeding");
                         anchors.centerIn: parent
-                        onButtonReleasesd: console.log("stop speedin up")
+                        onButtonReleasesd: backend.send("releasedSpeeding");
                     }
 
-                    // CustomButton
-                    // {
-                    //     setButtonText: "Rotate"
-                    //     setWidth: 70
-                    //     setHeight: 50
-                    //     setButtonBackColor: "black"
-                    //     setButtonFontColor: "white"
-                    //     setButtonBorderColor: "transparent"
-                    //     anchors.centerIn: parent
-                    //     onButtonClicked:
-                    //     {
-                    //         console.log("poweroff/on")
-                    //     }
-                    // }
                 }
             }
 
@@ -230,7 +190,7 @@ Page
                 setButtonBorderColor: "transparent"
                 onButtonClicked:
                 {
-                    console.log("poweroff/on")
+                    backend.send("powerToggle");
                 }
             }
 
@@ -244,7 +204,7 @@ Page
                 setButtonBorderColor: "transparent"
                 onButtonClicked:
                 {
-                    console.log("poweroff/on")
+                    backend.send("snsToggle");
                 }
             }
             Rectangle {
@@ -261,7 +221,7 @@ Page
                     id:indicatorBrightness
                     color: "yellow"
                     width: parent.width
-                    height: changeBrightnessBase.volume*100
+                    height:changeBrightnessBase.height * (1.0 - changeBrightnessBase.volume)
                     anchors.bottom: parent.bottom
                     opacity: 0.7
                 }
@@ -275,6 +235,7 @@ Page
                 }
                 Label
                 {
+                    id:tetbr
                     text:"bright"
                     anchors.centerIn: parent
                     color:"white"
@@ -318,13 +279,13 @@ Page
                                 Math.min(changeBrightnessBase.maxDy, brightnessControlArea.cumulativeDy)
                             )
 
-                            // reversed normalized value 0..1
-                            let value =
-                                1 - ((brightnessControlArea.cumulativeDy - changeBrightnessBase.minDy) /
+
+                            //not reversed
+                            let value = ((brightnessControlArea.cumulativeDy - changeBrightnessBase.minDy) /
                                     (changeBrightnessBase.maxDy - changeBrightnessBase.minDy))
 
                             changeBrightnessBase.volume = value
-                            changeBrightness(value)
+                            backend.send("changeBrightness:"+value);
                         }
                     }
                 }
@@ -345,6 +306,7 @@ Page
                 onButtonClicked:
                 {
                     console.log("open settings")
+                    backend.send("openSettings");
                 }
             }
         }
@@ -370,7 +332,7 @@ Page
                 anchors.right: parent.right
                 onButtonClicked:
                 {
-                    console.log("poweroff/on")
+                    backend.send("muteToggle");
                 }
             }
             CustomButton
@@ -385,6 +347,7 @@ Page
                 onButtonClicked:
                 {
                     console.log("fullscreen/normal")
+                    backend.send("fullscreenToggle");
                 }
             }
 
@@ -461,12 +424,13 @@ Page
                             )
 
                             // reversed normalized value 0..1
-                            let value =
+                            let value = Math.min(Math.max(
                                 1 - ((volumeControlArea.cumulativeDy - changeVolumeBase.minDy) /
-                                    (changeVolumeBase.maxDy - changeVolumeBase.minDy))
+                                    (changeVolumeBase.maxDy - changeVolumeBase.minDy)),
+                                                     0), 1)
 
                             changeVolumeBase.volume = value
-                            changeVolume(value)
+                            backend.send("changeVolume:"+value);
                         }
                     }
                 }
@@ -485,6 +449,7 @@ Page
                 onButtonClicked:
                 {
                     console.log("open playlist dialog")
+                    backend.send("openPlaylist");
                 }
             }
 
@@ -518,6 +483,7 @@ Page
                     onButtonClicked:
                     {
                         console.log("shuffle")
+                        backend.send("shuffleToggle");
                     }
                 }
 
@@ -533,6 +499,7 @@ Page
                     {
                         // settings.setSetting("Media/rotationAngle",value)
                         // videoOutput.rotation=value
+                        backend.send("rotate:"+value);
                     }
 
                 }
@@ -548,6 +515,7 @@ Page
                     onButtonClicked:
                     {
                         console.log("repeat")
+                        backend.send("repeatToggle");
                     }
                 }
             }
@@ -570,13 +538,14 @@ Page
                     onButtonClicked:
                     {
                         console.log("previous track")
+                        backend.send("previousToggle");
                     }
                 }
 
 
                 CustomButton
                 {
-                    setButtonText: "▶"
+                    setButtonText: "p"//backend.data["playing"] ==="1"? "▶" : "||"
                     setWidth: 70
                     setHeight: 50
                     setButtonBackColor: "black"
@@ -585,6 +554,8 @@ Page
                     onButtonClicked:
                     {
                         console.log("play/pause")
+                        backend.send("playToggle");
+                        // backend.send(Cmd.PlayToggle);
                     }
                 }
 
@@ -598,7 +569,7 @@ Page
                     setButtonBorderColor: "transparent"
                     onButtonClicked:
                     {
-                        console.log("next track")
+                        backend.send("nextToggle");
                     }
                 }
             }
@@ -636,12 +607,12 @@ Page
                         backgroundOpacity: 0.8// : 0.2
                         width: parent.width/1.5
                         height: 50
-                        enabled: root.mediaPlayer.seekable
+                        enabled:true //root.mediaPlayer.seekable
                         to: 1.0
-                        // value: root.mediaPlayer.position / root.mediaPlayer.duration
+                        value: 0//root.mediaPlayer.position / root.mediaPlayer.duration
 
                         anchors.centerIn: parent
-                        // onMoved: root.mediaPlayer.setPosition(value * root.mediaPlayer.duration)
+                        onMoved: backend.send("seeker:"+value)//root.mediaPlayer.setPosition(value * root.mediaPlayer.duration)
                     }
                     Label
                     {

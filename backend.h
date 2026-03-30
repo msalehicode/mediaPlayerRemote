@@ -7,12 +7,21 @@
 
 #include "btagent.h"
 
-
+// #include "commandhandler.h"
 
 #if QT_CONFIG(permissions)
 // #include <QCoreApplication>
 #include <QPermissions>
 #endif
+
+#include "btSocket.h"
+#include "androidcontrol.h"
+
+
+#include <QBluetoothLocalDevice> //to get device bluetooth is off or on
+#include <QDateTime>
+
+#include "settingsmanager.h"
 
 enum class BtStatus
 {
@@ -20,6 +29,8 @@ enum class BtStatus
 
     AdapterNotFound=10, //later for feature select adapter
     Failed,
+    PoweredOff,
+    PoweredOn,
 
 
     DeniedPermission=20,
@@ -36,7 +47,6 @@ enum class BtStatus
 };
 
 
-#include "btSocket.h"
 
 class Backend : public QObject
 {
@@ -46,10 +56,17 @@ class Backend : public QObject
     Q_PROPERTY(BtStatus btStatus READ getBtStatus WRITE setBtStatus NOTIFY btStatusChanged FINAL)
     Q_PROPERTY(QList<QString> devices READ devices WRITE setDevices NOTIFY devicesChanged FINAL)
     Q_PROPERTY(QString receivedMessage READ receivedMessage WRITE setReceivedMessage NOTIFY receivedMessageChanged FINAL)
+    Q_PROPERTY(bool bluetoothIsOff READ bluetoothIsOff WRITE setBluetoothIsOff NOTIFY bluetoothIsOffChanged FINAL)
+    // Q_PROPERTY(QVariantMap data READ data NOTIFY dataChanged)
 
 
 public:
-    explicit Backend(QGuiApplication* app,QObject *parent = nullptr);
+    explicit Backend(QGuiApplication* app, SettingsManager* settings, QObject *parent = nullptr);
+
+
+
+    // void processCommand(CommandHandler::Command cmd, const QString& value);
+
 
 
     QString targetDevice() const;
@@ -59,9 +76,13 @@ public:
     BtStatus getBtStatus() const;
     void setBtStatus(BtStatus newBtStatus);
 
-    Q_INVOKABLE void run(bool status);
+    Q_INVOKABLE void scan(bool status);
     Q_INVOKABLE void send(QString message);
-    Q_INVOKABLE void connectToHost(QString hostName);
+    // Q_INVOKABLE void send(CommandHandler::Command cmd, const QString& value="");
+    Q_INVOKABLE void connectToBluetoothHost(QString hostName);
+
+    Q_INVOKABLE void connectToBluetoothByAddress(QString name, QString address);
+    Q_INVOKABLE void reconnectToRecentDevice();
 
     void checkPermission();
     QList<QString> devices() const;
@@ -71,7 +92,19 @@ public:
     QString receivedMessage() const;
     void setReceivedMessage(QString newReceivedMessage);
 
+
+    void updateStatusBarColor();
+
+    // QVariantMap data() const;
+    // Q_INVOKABLE void setData(CommandHandler::Command key, const QString &value);
+    // void initData();
+    bool bluetoothIsOff() const;
+    void setBluetoothIsOff(bool newBluetoothIsOff);
+
 signals:
+
+    // void dataChanged();
+
 
     void sendMessage(QString text);
 
@@ -84,11 +117,16 @@ signals:
 
     void receivedMessageChanged();
 
+    void bluetoothIsOffChanged();
+
 public slots:
     void discoveryFinished();
     void discoveryCanceled();
     void newDeviceFound(QString key);
 
+
+
+    void onBluetoothStateChanged(QBluetoothLocalDevice::HostMode state);
 
 
     //emits by BtSocket
@@ -101,9 +139,10 @@ public slots:
 private:
     const int m_currentAdapterIndex;
     QString m_targetDevice;
-    BtStatus m_btStatus = BtStatus::Unknown;
+    BtStatus m_btStatus;
     BtAgent* m_btAgent;
 
+    AndroidControl m_androidControl;
 
     QString m_receivedMessage;
     QList<QString> m_devices;
@@ -113,6 +152,14 @@ private:
     QBluetoothDeviceInfo connectedDevice;//to hold passing device to socket
 
     BtSocket* m_socket;
+    // CommandHandler m_command;
+
+    // QVariantMap m_data;//store remote control data
+
+    SettingsManager* m_settings;
+
+    bool m_bluetoothIsOff;
+    QBluetoothLocalDevice m_localDevice; //get blueooth state is on/off..
 };
 
 #endif // BACKEND_H

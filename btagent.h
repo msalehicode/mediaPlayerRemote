@@ -7,8 +7,6 @@
 // #include <QTextStream>
 
 
-
-
 class BtAgent : public QObject
 {
     Q_OBJECT
@@ -26,6 +24,8 @@ public:
 
         connect(m_agent, &QBluetoothDeviceDiscoveryAgent::canceled,
                 this, &BtAgent::scanCanceled);
+
+
 
     }
     ~BtAgent()
@@ -74,6 +74,7 @@ public:
     {
         return &m_devices;
     }
+
 
 private slots:
     void deviceFound(const QBluetoothDeviceInfo &info)
@@ -127,11 +128,17 @@ signals:
     void discoveryCanceled();
     void newDeviceFound(QString key);
 
+    void onBtStateChanged(bool newStatus);
+
 private:
     QBluetoothDeviceDiscoveryAgent* m_agent;
     QMap<QString, QBluetoothDeviceInfo> m_devices;
 
     // QList<QBluetoothHostInfo> localAdapters;
 };
+
+
+
+
 
 #endif // BTAGENT_H

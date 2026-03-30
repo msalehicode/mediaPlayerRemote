@@ -19,13 +19,31 @@ qt_add_qml_module(appmediaPlayerRemote
         Main.qml
         SOURCES btagent.h btSocket.h
         SOURCES backend.h backend.cpp
+        SOURCES settingsmanager.h settingsmanager.cpp
+        SOURCES androidcontrol.h androidcontrol.cpp
+
+        #pages
         QML_FILES Pages/ControlPage.qml
         QML_FILES Pages/ConnectionPage.qml
         QML_FILES Pages/SettingsPage.qml
-RESOURCES CustomComponents/qmldir
-QML_FILES CustomComponents/CustomButton.qml CustomComponents/CustomButtonWithIcon.qml CustomComponents/CustomCheckBox.qml CustomComponents/CustomCollapsiblePanel.qml CustomComponents/CustomCombobox.qml CustomComponents/CustomComboboxWithIcon.qml CustomComponents/CustomPopupMenu.qml CustomComponents/CustomPopupMessage.qml CustomComponents/CustomProccessBar.qml CustomComponents/CustomSwitch.qml CustomComponents/CustomSwitchText.qml CustomComponents/CustomTextInput.qml CustomComponents/CustomTimer.qml
-QML_FILES CustomComponents/CustomSlider.qml
-QML_FILES Pages/scripts.js
+
+        #custom Components
+        RESOURCES CustomComponents/qmldir
+        QML_FILES CustomComponents/CustomButton.qml CustomComponents/CustomButtonWithIcon.qml
+        QML_FILES CustomComponents/CustomCheckBox.qml CustomComponents/CustomCollapsiblePanel.qml
+        QML_FILES CustomComponents/CustomCombobox.qml CustomComponents/CustomComboboxWithIcon.qml
+        QML_FILES CustomComponents/CustomPopupMenu.qml CustomComponents/CustomPopupMessage.qml
+        QML_FILES CustomComponents/CustomProccessBar.qml CustomComponents/CustomSwitch.qml
+        QML_FILES CustomComponents/CustomSwitchText.qml CustomComponents/CustomTextInput.qml CustomComponents/CustomTimer.qml
+        QML_FILES CustomComponents/CustomSlider.qml CustomComponents/CustomTextInputForMacAddress.qml
+        QML_FILES CustomComponents/CustomTextInputWithMask.qml
+
+        #javascript scripts
+        QML_FILES Pages/scripts.js
+
+        #icons
+        RESOURCES icons/bluetooth.png icons/wifi.png
+
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -39,10 +57,13 @@ set_target_properties(appmediaPlayerRemote PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+# add_subdirectory(../CommandHandler ../../build/CommandHandler_build)
+
 target_link_libraries(appmediaPlayerRemote
     PRIVATE Qt6::Quick
     Qt6::Bluetooth
     Qt6::Core
+    # CommandHandler
 )
 
 include(GNUInstallDirs)

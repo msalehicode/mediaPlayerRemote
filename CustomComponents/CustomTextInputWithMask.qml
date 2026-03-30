@@ -22,8 +22,12 @@ Item
     property bool setFocus:false
     property string setErrorPosfix: ")"
     property bool setVisible:true
+    property int setIntputMask;
     property bool errorStatus:false
+    property int setMaxCharacter:5
     signal theTextAccepted;
+
+    signal theTextIsFilledFully;
 
     function clear()
     {
@@ -105,8 +109,13 @@ Item
                 text:theText
                 color:setFontColor
                 focus: setFocus
-                inputMethodHints:  Qt.ImhMultiLine //Qt.ImhNoTextHandles | Qt.ImhPreferLowercase | Qt.ImhNoPredictiveText
+                maximumLength: setMaxCharacter
+                validator: RegularExpressionValidator
+                {
+                    regularExpression: /[0-9A-Za-z]+/
+                }
                 font.pixelSize: setFontSize
+
                 anchors
                 {
                     left:parent.left
@@ -119,6 +128,8 @@ Item
                 onTextChanged:
                 {
                     theText = text
+                    if(length>=setMaxCharacter)
+                        theTextIsFilledFully()
                 }
                 Keys.onReturnPressed:
                 {
