@@ -15,7 +15,6 @@
 #endif
 
 #include "btSocket.h"
-#include "androidcontrol.h"
 
 
 #include <QBluetoothLocalDevice> //to get device bluetooth is off or on
@@ -29,14 +28,13 @@ enum class BtStatus
 
     AdapterNotFound=10, //later for feature select adapter
     Failed,
-    PoweredOff,
-    PoweredOn,
 
 
     DeniedPermission=20,
     AskingPermission,
     GrantedPermission,
-
+    PoweredOff,
+    PoweredOn,
 
     Disconnected=30,
     Scanning,
@@ -56,7 +54,6 @@ class Backend : public QObject
     Q_PROPERTY(BtStatus btStatus READ getBtStatus WRITE setBtStatus NOTIFY btStatusChanged FINAL)
     Q_PROPERTY(QList<QString> devices READ devices WRITE setDevices NOTIFY devicesChanged FINAL)
     Q_PROPERTY(QString receivedMessage READ receivedMessage WRITE setReceivedMessage NOTIFY receivedMessageChanged FINAL)
-    Q_PROPERTY(bool bluetoothIsOff READ bluetoothIsOff WRITE setBluetoothIsOff NOTIFY bluetoothIsOffChanged FINAL)
     // Q_PROPERTY(QVariantMap data READ data NOTIFY dataChanged)
 
 
@@ -84,7 +81,13 @@ public:
     Q_INVOKABLE void connectToBluetoothByAddress(QString name, QString address);
     Q_INVOKABLE void reconnectToRecentDevice();
 
-    void checkPermission();
+    Q_INVOKABLE QString getVersion();
+
+    Q_INVOKABLE void disconnectFromHost();
+
+    Q_INVOKABLE void checkPermission();
+    Q_INVOKABLE void isBluetoothOn();
+
     QList<QString> devices() const;
     void setDevices(const QList<QString> &newDevices);
     void setDevices(QString newDevices);
@@ -98,8 +101,7 @@ public:
     // QVariantMap data() const;
     // Q_INVOKABLE void setData(CommandHandler::Command key, const QString &value);
     // void initData();
-    bool bluetoothIsOff() const;
-    void setBluetoothIsOff(bool newBluetoothIsOff);
+
 
 signals:
 
@@ -116,8 +118,6 @@ signals:
     void devicesChanged();
 
     void receivedMessageChanged();
-
-    void bluetoothIsOffChanged();
 
 public slots:
     void discoveryFinished();
@@ -142,8 +142,6 @@ private:
     BtStatus m_btStatus;
     BtAgent* m_btAgent;
 
-    AndroidControl m_androidControl;
-
     QString m_receivedMessage;
     QList<QString> m_devices;
 
@@ -158,8 +156,7 @@ private:
 
     SettingsManager* m_settings;
 
-    bool m_bluetoothIsOff;
-    QBluetoothLocalDevice m_localDevice; //get blueooth state is on/off..
+    QBluetoothLocalDevice* m_localDevice; //get blueooth state is on/off..
 };
 
 #endif // BACKEND_H

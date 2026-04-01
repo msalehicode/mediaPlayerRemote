@@ -5,7 +5,7 @@ import "scripts.js" as Script
 Page
 {
     anchors.fill: parent
-
+    objectName:"ConnectionPage"
     // readonly property var connectionModes: ["Bluetooth", "Network"]
 
     Rectangle
@@ -238,7 +238,7 @@ Page
                             id:baseFoundDevicesList
                             color:"white"
                             width:parent.width
-                            height:200
+                            height:250
                             clip:true
 
                             ListView
@@ -335,6 +335,20 @@ Page
             // }
 
 
+        }
+    }
+
+
+    footer: Rectangle
+    {
+        color:bluetoothBase.color
+        width:parent.width
+        height:35
+        Label
+        {
+            text:"v " + backend.getVersion()
+            color:"white"
+            anchors.centerIn: parent
         }
     }
 

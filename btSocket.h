@@ -25,6 +25,12 @@ public:
         qInfo () << "destructor SOCKET.";
     }
 
+    void disconnectFromHost()
+    {
+        if(m_socket)
+            m_socket->disconnectFromService();
+    }
+
     void init(QBluetoothDeviceInfo* chosenDevice)
     {
         m_device = chosenDevice;

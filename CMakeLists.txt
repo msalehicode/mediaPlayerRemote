@@ -1,8 +1,16 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(mediaPlayerRemote VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(APP_CURRENT_VERSION "0.8.0")
+set(APP_CURRENT_VERSION_CODE 080)
+set(APP_TitleName "Media Player Remote")
+set(APP_OrganizationName "orgMediaPlayer")
+set(APP_ApplicationName "appMediaPlayerRemote")
+
+project(mediaPlayerRemote VERSION ${APP_CURRENT_VERSION} LANGUAGES CXX)
+
 
 find_package(Qt6 REQUIRED COMPONENTS Quick Bluetooth Core)
 
@@ -43,7 +51,6 @@ qt_add_qml_module(appmediaPlayerRemote
 
         #icons
         RESOURCES icons/bluetooth.png icons/wifi.png
-
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -55,6 +62,14 @@ set_target_properties(appmediaPlayerRemote PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
+
+    #android stuff
+    QT_ANDROID_PACKAGE_SOURCE_DIR ${CMAKE_SOURCE_DIR}/android
+    QT_ANDROID_PACKAGE_NAME "${APP_OrganizationName}.qtproject.${APP_ApplicationName}"
+    QT_ANDROID_APP_NAME "${APP_TitleName}"
+    QT_ANDROID_APP_ICON "@mipmap/ic_launcher"
+    QT_ANDROID_VERSION_CODE ${APP_CURRENT_VERSION_CODE}
+    QT_ANDROID_VERSION_NAME "${APP_CURRENT_VERSION}"
 )
 
 # add_subdirectory(../CommandHandler ../../build/CommandHandler_build)
@@ -64,6 +79,19 @@ target_link_libraries(appmediaPlayerRemote
     Qt6::Bluetooth
     Qt6::Core
     # CommandHandler
+)
+
+# Get current build date/time for backend.getVersion()
+# string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d" UTC)
+
+# announce cmake variables to Cpp side
+target_compile_definitions(appmediaPlayerRemote PRIVATE
+    APP_VERSION="${APP_CURRENT_VERSION}"
+    APP_TITLE="${APP_TitleName}"
+    APP_ORGANIZATION="${APP_OrganizationName}"
+    APP_NAME="${APP_ApplicationName}"
+    BUILD_DATE_TIME="${BUILD_DATE}"
 )
 
 include(GNUInstallDirs)

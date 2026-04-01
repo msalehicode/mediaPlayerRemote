@@ -6,22 +6,23 @@ Backend::Backend(QGuiApplication* app, SettingsManager *settings, QObject *paren
     m_btAgent{nullptr},
     m_currentAdapterIndex{0},
     m_socket{nullptr},
-    m_btStatus(BtStatus::Unknown),
-    m_settings(settings)
+    m_settings(settings),
+    m_localDevice(nullptr)
 {
     // initData();
 
-
-    connect(&m_localDevice, &QBluetoothLocalDevice::hostModeStateChanged,
-            this, &Backend::onBluetoothStateChanged);
-
-
-    //get initial bluetooth status
-    setBluetoothIsOff(m_localDevice.hostMode()==QBluetoothLocalDevice::HostPoweredOff? true : false);
-
-    //setBtStatus will scan this but on inital it may not set status bar correctly speacially when bluetoothIsOff==true
-    updateStatusBarColor();
 }
+
+QString Backend::getVersion()
+{
+    //version and build macro from cmake
+    QString result;
+    result += QString::fromUtf8(APP_VERSION);
+    result += " ";
+    result += QString::fromUtf8(BUILD_DATE_TIME);
+    return result;
+}
+
 
 // void Backend::processCommand(CommandHandler::Command  cmd, const QString &value)
 // {
@@ -54,14 +55,29 @@ void Backend::setTargetDevice(const QString &newConnetedDevice)
 
 void Backend::scan(bool status)
 {
+    //check permission and if its granted check device bluetooth status is ON?
+    checkPermission();
+
     if(status)
     {
-        qInfo() << "starting..";
+        qInfo() << "start scanning..";
+
+        //clear old list
         m_devices.clear();
-        checkPermission();
-        if(m_btStatus==BtStatus::GrantedPermission)
+        emit devicesChanged();
+
+        if(m_btStatus==BtStatus::PoweredOn) //we check if bluetooth is PoweredOn, becasuse if permission granted next stage is bt poweredOn
         {
+
+            //when user is on connecting/connected stage is not allowed to scan.
+            if(m_btStatus==BtStatus::Connected || m_btStatus==BtStatus::Connecting)
+                return;
+
             setBtStatus(BtStatus::Scanning);
+
+            // if(m_btAgent)
+                // delete m_btAgent;
+
             m_btAgent = new BtAgent;
 
             connect(m_btAgent, &BtAgent::discoveryFinished,
@@ -79,16 +95,15 @@ void Backend::scan(bool status)
 
         }
         else
-            qInfo() << "permission problem. cant proceed.";
+            qInfo() << "bluetooth power is off! cant scan!";
 
     }
     else
     {
-        qInfo() << "stopping..";
+        qInfo() << "stop scanning..";
         if(m_btAgent)
         {
-            m_btAgent->stopDiscovery();
-            setBtStatus(BtStatus::ScanningCanceled);
+            m_btAgent->stopDiscovery(); //will emit canceled/finished slots
         }
 
     }
@@ -109,16 +124,15 @@ void Backend::send(QString message)
 
 void Backend::connectToBluetoothHost(QString hostName)
 {
-    //stop discovery
+    //stop discovery and check permission and bluetooth status
     scan(false);
+
+    disconnectFromHost();
+
 
     QMap<QString, QBluetoothDeviceInfo>* deviceList = m_btAgent->getDevicesMap();
     if (deviceList->contains(hostName))
     {
-        //make sure stop discovery
-
-
-
         m_socket = new BtSocket;
 
         // QString firstKey = dev->firstKey();
@@ -160,8 +174,10 @@ void Backend::connectToBluetoothHost(QString hostName)
 
 void Backend::connectToBluetoothByAddress(QString name,QString address)
 {
-    //stop discovery
+    //stop discovery and check permission and bluetooth status
     scan(false);
+
+    disconnectFromHost();
 
     QBluetoothAddress addr(address.trimmed());
     if (addr.isNull()) {
@@ -219,18 +235,34 @@ void Backend::reconnectToRecentDevice()
         QString deviceName = m_settings->getSetting("recentDevice/name","").toString();
         QString deviceAddress = m_settings->getSetting("recentDevice/address","").toString();
 
-        if(m_btAgent)//if user did scan
-        {
-            QMap<QString, QBluetoothDeviceInfo>* deviceList = m_btAgent->getDevicesMap();
-            if (deviceList->contains(deviceName))
-                connectToBluetoothHost(deviceName);
-        }
-        else //device not found on scanned devices list (or user didnt hit scan button and direcotly clicked this
+        // if(m_btAgent)//if user did scan
+        // {
+            // QMap<QString, QBluetoothDeviceInfo>* deviceList = m_btAgent->getDevicesMap();
+            // if (deviceList->contains(deviceName))
+                // connectToBluetoothHost(deviceName);
+        // }
+        // else //device not found on scanned devices list (or user didnt hit scan button and direcotly clicked this
             //lets try direct connection to recent device
-            connectToBluetoothByAddress(deviceName,deviceAddress);
+
+        //direct coonect tot that address.
+        connectToBluetoothByAddress(deviceName,deviceAddress);
     }
     else
         qInfo() << "reconnect type is not blueooth, its : " << deviceType; //later for wifi/network connection
+}
+
+void Backend::disconnectFromHost()
+{
+    if(m_settings->getSetting("recentDevice/type","") == "bluetooth" && m_socket)
+    {
+        qInfo()<<"backend disconnecting from bluetooth host...";
+        m_socket->disconnectFromHost();
+        // delete m_socket;
+    }
+    else
+    {
+        //disconnect from net host
+    }
 }
 
 
@@ -246,26 +278,55 @@ void Backend::checkPermission()
                 qInfo()<<"undetermined askin permission..";
                 setBtStatus(BtStatus::AskingPermission);
                 m_app->requestPermission(permission, this, &Backend::checkPermission);
-                return;
-            }
+            }break;
             case Qt::PermissionStatus::Denied:
             {
                 qInfo()<< "permission deinied..----------";
                 setBtStatus(BtStatus::DeniedPermission);
                 // m_app->quit();
-                return;
-            }
+            }break;
 
             case Qt::PermissionStatus::Granted:
             {
                 qInfo()<<"permission is fine.";
                 setBtStatus(BtStatus::GrantedPermission);
-                return;
-            }
+
+                //get latest localDevice. have to create new
+                //to avoid old status e.g user's bluetooth is really ON but it reutnrs off! even hostModeStateChanged doesnt work correctly
+                if(m_localDevice)
+                {
+                    delete m_localDevice;
+                    disconnect(m_localDevice);
+                    qInfo() << "deleting and disconnecting old localDevice to make new one.";
+                }
+
+
+                m_localDevice = new QBluetoothLocalDevice();
+                connect(m_localDevice, &QBluetoothLocalDevice::hostModeStateChanged,
+                        this, &Backend::onBluetoothStateChanged);
+
+                isBluetoothOn();
+            }break;
         }
     #endif // QT_CONFIG(permissions)
 
-    setBtStatus(BtStatus::Failed);
+}
+
+void Backend::isBluetoothOn()
+{
+    if(m_localDevice)
+    {
+        bool r = m_localDevice->hostMode()==QBluetoothLocalDevice::HostPoweredOff? true : false;
+        qInfo()<<"bluetooth isBluetoothOFF?="  << r;
+
+        setBtStatus(m_localDevice->hostMode()==QBluetoothLocalDevice::HostPoweredOff? BtStatus::PoweredOff : BtStatus::PoweredOn);
+        QString res = (getBtStatus()==BtStatus::PoweredOff ? "OFF" :
+                           getBtStatus()==BtStatus::PoweredOn ? "ON" : "other");
+        qInfo() << "setBtStatus worked or not/ status=" << res;
+    }
+    else
+        qInfo()<<"m_localDevice is not set yet";
+
 }
 
 void Backend::discoveryFinished()
@@ -293,8 +354,7 @@ void Backend::newDeviceFound(QString key)
 void Backend::onBluetoothStateChanged(QBluetoothLocalDevice::HostMode state)
 {
     qDebug() << QDateTime::currentDateTime().toString() <<" - Bluetooth device HostMode changed to:" << state;
-
-    setBluetoothIsOff(state==QBluetoothLocalDevice::HostPoweredOff? true : false);
+    setBtStatus(state==QBluetoothLocalDevice::HostPoweredOff? BtStatus::PoweredOff : BtStatus::PoweredOn);
 }
 
 void Backend::connected()
@@ -328,22 +388,6 @@ void Backend::error(QString errorDescription)
     qWarning() << "backend: erorr from bt socket" << errorDescription;
     setBtStatus(BtStatus::Failed);
 }
-
-bool Backend::bluetoothIsOff() const
-{
-    return m_bluetoothIsOff;
-}
-
-void Backend::setBluetoothIsOff(bool newBluetoothIsOff)
-{
-    if (m_bluetoothIsOff == newBluetoothIsOff)
-        return;
-    m_bluetoothIsOff = newBluetoothIsOff;
-
-    setBtStatus(m_bluetoothIsOff? BtStatus::PoweredOff : BtStatus::PoweredOn);
-    emit bluetoothIsOffChanged();
-}
-
 
 // QVariantMap Backend::data() const
 // {
@@ -416,51 +460,25 @@ BtStatus Backend::getBtStatus() const
 }
 
 
-void Backend::updateStatusBarColor()
-{
-    switch(m_btStatus)
-    {
-    case BtStatus::Connected:
-        m_androidControl.setStatusBarColor(0, 170, 0);//green
-        break;
-
-    case BtStatus::Connecting:
-        m_androidControl.setStatusBarColor(179, 81, 0);//orange
-        break;
-
-    case BtStatus::PoweredOn:
-    case BtStatus::Scanning:
-    case BtStatus::ScanningDone:
-    case BtStatus::ScanningCanceled:
-    case BtStatus::GrantedPermission:
-    case BtStatus::AskingPermission:
-        m_androidControl.setStatusBarColor(170, 170, 0);//yellow
-        break;
-
-    case BtStatus::AdapterNotFound:
-    case BtStatus::Disconnected:
-    case BtStatus::Failed:
-    case BtStatus::Unknown:
-    case BtStatus::PoweredOff:
-    case BtStatus::DeniedPermission:
-        m_androidControl.setStatusBarColor(170, 0, 0);//red
-        break;
-    default:
-        m_androidControl.setStatusBarColor(99, 0, 155);//purple
-    }
-
-}
-
 void Backend::setBtStatus(BtStatus newBtStatus)
 {
     if (m_btStatus == newBtStatus)
         return;
 
 
-    m_btStatus = newBtStatus;
+    /*
+     * to avoid override status
+     * maybe user hit start scanning / stop scanning meanwhile clicked on
+     * connect doesnt matter which one (direct connection / recentDevice / from found devices list)
+     * connect functions will call scan(false) in result will do stopDiscovery and that would emit scanningCancel/Scanning Done
+     * so we dont like this and ignore this new status to avoid override to show correct connected/connecting status
+     */
+    if((m_btStatus == BtStatus::Connecting || m_btStatus == BtStatus::Connected)
+        && (newBtStatus == BtStatus::ScanningCanceled || newBtStatus == BtStatus::ScanningDone || newBtStatus == BtStatus::Scanning))
+        return;
 
-    //set color for statusBar
-    updateStatusBarColor();
+
+    m_btStatus = newBtStatus;
 
     emit btStatusChanged();
 }

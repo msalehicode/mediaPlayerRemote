@@ -4,8 +4,33 @@ AndroidControl::AndroidControl(QObject *parent)
     : QObject{parent}
 {}
 
+void AndroidControl::setStatusBarColor(const QString &hexColor)
+{
+    // qInfo() << "setStatusBarColor (HEX) received color=" << hexColor;
+#ifdef Q_OS_ANDROID
+    QString c = hexColor.trimmed();
+    if (c.startsWith("#"))
+        c.remove(0, 1);
+
+    if (c.length() != 6) // expecting RRGGBB
+        return;
+
+    bool ok = false;
+    int rgb = c.toInt(&ok, 16);
+    if (!ok)
+        return;
+
+    int r = (rgb >> 16) & 0xFF;
+    int g = (rgb >> 8) & 0xFF;
+    int b = rgb & 0xFF;
+    setStatusBarColor(r, g, b);
+
+#endif
+}
+
 void AndroidControl::setStatusBarColor(int r, int g, int b)
 {
+    // qInfo() << "setStatusBarColor (RGB) received color=" << r << g << b;
 #ifdef Q_OS_ANDROID
     QJniObject activity =
         QJniObject::callStaticObjectMethod(

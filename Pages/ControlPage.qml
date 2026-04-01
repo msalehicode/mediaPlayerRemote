@@ -9,7 +9,7 @@ Page
     // anchors.fill: parent
     id:root
 
-
+    objectName: "ControlPage"
 
 
     Rectangle

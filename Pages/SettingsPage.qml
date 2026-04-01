@@ -4,7 +4,7 @@ import QtQuick.Controls
 Page
 {
     anchors.fill: parent
-
+    objectName: "SettingsPage"
 
     Rectangle
     {
