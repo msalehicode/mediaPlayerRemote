@@ -7,10 +7,28 @@ Backend::Backend(QGuiApplication* app, SettingsManager *settings, QObject *paren
     m_currentAdapterIndex{0},
     m_socket{nullptr},
     m_settings(settings),
-    m_localDevice(nullptr)
+    m_localDevice(nullptr),
+    m_netSocket(nullptr)
 {
     // initData();
 
+}
+
+void Backend::processCommand(QByteArray data)
+{
+    QString value;
+    switch(m_command.unpack(data,value))
+    {
+        case CommandHandler::Command::EnterPassword:
+            emit showPasswordDialog();
+            break;
+        case CommandHandler::Command::WrongPassword:
+            emit wrongPassword();
+            break;
+        case CommandHandler::Command::AthenticatedFine:
+            emit hidePasswordDialog();
+            break;
+    }
 }
 
 QString Backend::getVersion()
@@ -112,14 +130,15 @@ void Backend::scan(bool status)
 
 void Backend::send(QString message)
 {
+    qInfo () << "seding message : " << message;
     emit sendMessage(message);
 }
 
-// void Backend::send(CommandHandler::Command cmd, const QString& value)
-// {
-//     emit sendMessage(m_command.package(cmd,value));
-// }
-
+void Backend::send(CommandHandler::Command cmd, QString value)
+{
+    qInfo () << "seding data : " << cmd << "Val= " << value;
+    emit sendData(m_command.pack(cmd,value));
+}
 
 
 void Backend::connectToBluetoothHost(QString hostName)
@@ -159,8 +178,13 @@ void Backend::connectToBluetoothHost(QString hostName)
         connect(m_socket, &BtSocket::error,
                 this , &Backend::error);
 
-        connect(this, &Backend::sendMessage,
-                m_socket , &BtSocket::sendMessage);
+
+        connect(this, QOverload<const QString &>::of(&Backend::sendMessage),
+                m_socket, QOverload<const QString &>::of(&BtSocket::sendMessage));
+
+        connect(this, QOverload<QByteArray>::of(&Backend::sendData),
+                m_socket, QOverload<QByteArray>::of(&BtSocket::sendData));
+
 
     }
     else
@@ -223,32 +247,75 @@ void Backend::connectToBluetoothByAddress(QString name,QString address)
     connect(m_socket, &BtSocket::error,
             this , &Backend::error);
 
-    connect(this, &Backend::sendMessage,
-            m_socket , &BtSocket::sendMessage);
+    connect(this, QOverload<const QString &>::of(&Backend::sendMessage),
+            m_socket, QOverload<const QString &>::of(&BtSocket::sendMessage));
+
+    connect(this, QOverload<QByteArray>::of(&Backend::sendData),
+            m_socket, QOverload<QByteArray>::of(&BtSocket::sendData));
+
 }
 
 void Backend::reconnectToRecentDevice()
 {
     QString deviceType = m_settings->getSetting("recentDevice/type","").toString();
+    QString deviceName = m_settings->getSetting("recentDevice/name","").toString();
+    QString deviceAddress = m_settings->getSetting("recentDevice/address","").toString();
+
     if(deviceType=="bluetooth")
     {
-        QString deviceName = m_settings->getSetting("recentDevice/name","").toString();
-        QString deviceAddress = m_settings->getSetting("recentDevice/address","").toString();
-
-        // if(m_btAgent)//if user did scan
-        // {
-            // QMap<QString, QBluetoothDeviceInfo>* deviceList = m_btAgent->getDevicesMap();
-            // if (deviceList->contains(deviceName))
-                // connectToBluetoothHost(deviceName);
-        // }
-        // else //device not found on scanned devices list (or user didnt hit scan button and direcotly clicked this
-            //lets try direct connection to recent device
-
         //direct coonect tot that address.
         connectToBluetoothByAddress(deviceName,deviceAddress);
     }
+    else if(deviceType=="network")
+    {
+        connectToNetworkByAddress(deviceName,deviceAddress);
+    }
     else
-        qInfo() << "reconnect type is not blueooth, its : " << deviceType; //later for wifi/network connection
+        qInfo() << "reconnect type is neither blueooth nor network. its : " << deviceType; //later for wifi/network connection
+}
+
+void Backend::connectToNetworkByAddress(QString name, QString address)
+
+{
+    //separate ip and port
+    QString ip= address.split(":").at(0);
+    quint16 port= address.split(":").at(1).toUInt();
+
+    //save this device as recent
+    m_settings->setSetting("recentDevice/type","network");
+    m_settings->setSetting("recentDevice/name",name);
+    m_settings->setSetting("recentDevice/address",address);
+
+
+    //make sure there is no connected connection.
+    disconnectFromHost();
+
+
+    //create socket and connection
+    m_netSocket = new NtSocket(this);
+
+    m_netSocket->connectToHost(ip,port);
+
+    connect(m_netSocket, &NtSocket::connected,
+            this , &Backend::connected);
+
+    connect(m_netSocket, &NtSocket::disconnected,
+            this , &Backend::disconnected);
+
+    connect(m_netSocket, &NtSocket::messageReceived,
+            this , &Backend::messageReceived);
+
+    connect(m_netSocket, &NtSocket::error,
+            this , &Backend::error);
+
+
+    connect(this, QOverload<const QString &>::of(&Backend::sendMessage),
+            m_netSocket, QOverload<const QString &>::of(&NtSocket::sendMessage));
+
+    connect(this, QOverload<QByteArray>::of(&Backend::sendData),
+            m_netSocket, QOverload<QByteArray>::of(&NtSocket::sendData));
+
+
 }
 
 void Backend::disconnectFromHost()
@@ -259,10 +326,13 @@ void Backend::disconnectFromHost()
         m_socket->disconnectFromHost();
         // delete m_socket;
     }
-    else
+    else if(m_settings->getSetting("recentDevice/type","") == "network" && m_netSocket)
     {
-        //disconnect from net host
+        qInfo()<<"backend disconnecting from network host...";
+        m_netSocket->disconnectFromHost();
     }
+    else
+        qInfo()<<"unkown recentDevice/Type";
 }
 
 
@@ -357,10 +427,59 @@ void Backend::onBluetoothStateChanged(QBluetoothLocalDevice::HostMode state)
     setBtStatus(state==QBluetoothLocalDevice::HostPoweredOff? BtStatus::PoweredOff : BtStatus::PoweredOn);
 }
 
+
+QString Backend::getArchitecture()
+{
+    #if defined(Q_PROCESSOR_X86_64)
+        return "x86_64 (64-bit Intel/AMD)";
+    #elif defined(Q_PROCESSOR_ARM)
+        return "ARM (32-bit)";
+    #elif defined(Q_PROCESSOR_ARM_64) // May also be Q_PROCESSOR_AARCH64
+        return "ARM64 (64-bit ARM)";
+    #elif defined(Q_PROCESSOR_X86)
+        return "x86 (32-bit Intel/AMD)";
+    #else
+        return "architecture not specifically detected.";
+    #endif
+}
+
+QString Backend::getPlatform()
+{
+    #ifdef Q_OS_WIN
+        return "Windows";
+    #elif defined(Q_OS_MAC) // Note: sometimes Q_OS_MACOS, sometimes Q_OS_MAC
+        return "MacOs";
+    #elif defined(Q_OS_LINUX)
+        return "Linux";
+    #elif defined(Q_OS_ANDROID)
+        return "Android":
+    #else
+        return "unsupported Os";
+    #endif
+}
+
+
 void Backend::connected()
 {
     qInfo() << "backend: connected";
     setBtStatus(BtStatus::Connected);
+
+    //send client info to server.such as app version, client system info...
+    //splited by `
+    QString info;
+    info += QString::fromUtf8(APP_VERSION_CODE);
+    // info += "`"+ QString::fromUtf8(APP_VERSION);
+    info += "`"+ QSysInfo::machineHostName();
+    info += "`"+ QString::fromUtf8(APP_BUILD_PLATFORM);
+    // info += "`"+ getPlatform(); //doesnt work proper, android and linux are not same! it return android ->linux
+    info += "`"+ QString::fromUtf8(BUILD_DATE_TIME);
+    info += "`"+ getArchitecture();
+    info += "`"+ QSysInfo::prettyProductName();
+    info += "`"+ QSysInfo::kernelType();
+    info += "`"+ QSysInfo::kernelVersion();
+    info += "`"+ QSysInfo::currentCpuArchitecture();
+    info += "`"+ QSysInfo::buildAbi();
+    emit sendData(m_command.pack(CommandHandler::Command::ClientInfo,info));
 }
 
 
@@ -372,22 +491,30 @@ void Backend::disconnected()
 
 void Backend::messageReceived(QByteArray data)
 {
-    QString message =QString::fromUtf8(data);
-    qInfo() << "backend: messagerecived:" << message;
+    //ping pong to server to determine clients ping every xSeconds
+    if(data==CommandHandler::PING_DATA)
+    {
+        emit sendData(CommandHandler::PONG_DATA);
+        return;
+    }
 
-    setReceivedMessage(message);
 
-    // QString value;
-    // CommandHandler::Command  cmd;
-    // cmd = m_command.unpackage(&data, value);
-    // processCommand(cmd,value);
+    // qInfo() << "backend: message received (data) = " << data;
+    // QString message =QString::fromUtf8(data);
+    // qInfo() << "backend: messagerecived:" << message;
+
+    // setReceivedMessage(message);
+
+    processCommand(data);
 }
 
 void Backend::error(QString errorDescription)
 {
     qWarning() << "backend: erorr from bt socket" << errorDescription;
+    // if()
     setBtStatus(BtStatus::Failed);
 }
+
 
 // QVariantMap Backend::data() const
 // {

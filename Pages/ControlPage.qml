@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import "../CustomComponents"
 import "scripts.js" as Script
-// i m p  o r t  A p p   1 . 0
+import MyCommands //enum from CommandHandler. call enum like:  Command.Something
 
 Page
 {
@@ -77,8 +77,7 @@ Page
                     anchors.verticalCenter: parent.verticalCenter
                     onButtonClicked:
                     {
-                        console.log("seek back 15s")
-                        backend.send("seekBack");
+                        backend.send(Command.SeekBack,"");
                     }
                 }
 
@@ -95,8 +94,7 @@ Page
                     anchors.verticalCenter: parent.verticalCenter
                     onButtonClicked:
                     {
-                        console.log("seek forth 15s")
-                        backend.send("seekForth");
+                        backend.send(Command.SeekForth,"");
                     }
                 }
 
@@ -115,7 +113,7 @@ Page
                     anchors.horizontalCenter: parent.horizontalCenter
                     onButtonClicked:
                     {
-                        backend.send("speedUp");
+                        backend.send(Command.SpeedUp2,"");
                     }
                 }
 
@@ -132,7 +130,7 @@ Page
                     anchors.horizontalCenter: parent.horizontalCenter
                     onButtonClicked:
                     {
-                        backend.send("speedDown");
+                        backend.send(Command.SpeedDown,"");
                     }
                 }
 
@@ -157,9 +155,9 @@ Page
                         setButtonBackColor: "transparent"
                         setButtonFontColor: "white"
                         setButtonBorderColor: "transparent"
-                        onButtonHeld: backend.send("heldSpeeding");
+                        onButtonHeld: backend.send(Command.StartSpeeding,"");
                         anchors.centerIn: parent
-                        onButtonReleasesd: backend.send("releasedSpeeding");
+                        onButtonReleasesd: backend.send(Command.StopSpeeding,"");
                     }
 
                 }
@@ -190,7 +188,7 @@ Page
                 setButtonBorderColor: "transparent"
                 onButtonClicked:
                 {
-                    backend.send("powerToggle");
+                    backend.send(Command.PowerToggle,"");
                 }
             }
 
@@ -204,7 +202,7 @@ Page
                 setButtonBorderColor: "transparent"
                 onButtonClicked:
                 {
-                    backend.send("snsToggle");
+                    backend.send(Command.SNSToggle,"");
                 }
             }
             Rectangle {
@@ -285,7 +283,7 @@ Page
                                     (changeBrightnessBase.maxDy - changeBrightnessBase.minDy))
 
                             changeBrightnessBase.volume = value
-                            backend.send("changeBrightness:"+value);
+                            backend.send(Command.ModifyBrightness,value);
                         }
                     }
                 }
@@ -305,8 +303,7 @@ Page
                 setButtonBorderColor: "transparent"
                 onButtonClicked:
                 {
-                    console.log("open settings")
-                    backend.send("openSettings");
+                    backend.send(Command.DialogSettings,"");
                 }
             }
         }
@@ -332,7 +329,7 @@ Page
                 anchors.right: parent.right
                 onButtonClicked:
                 {
-                    backend.send("muteToggle");
+                    backend.send(Command.MuteToggle,"");
                 }
             }
             CustomButton
@@ -346,8 +343,7 @@ Page
                 anchors.right: parent.right
                 onButtonClicked:
                 {
-                    console.log("fullscreen/normal")
-                    backend.send("fullscreenToggle");
+                    backend.send(Command.FullscreenToggle,"");
                 }
             }
 
@@ -430,7 +426,7 @@ Page
                                                      0), 1)
 
                             changeVolumeBase.volume = value
-                            backend.send("changeVolume:"+value);
+                            backend.send(Command.ModifyVolume,value);
                         }
                     }
                 }
@@ -448,8 +444,7 @@ Page
                 setButtonBorderColor: "transparent"
                 onButtonClicked:
                 {
-                    console.log("open playlist dialog")
-                    backend.send("openPlaylist");
+                    backend.send(Command.DialogPlayList,"");
                 }
             }
 
@@ -482,8 +477,7 @@ Page
                     setButtonBorderColor: "transparent"
                     onButtonClicked:
                     {
-                        console.log("shuffle")
-                        backend.send("shuffleToggle");
+                        backend.send(Command.ShuffleToggle,"");
                     }
                 }
 
@@ -497,9 +491,7 @@ Page
                     height: 45
                     onValueChanged:
                     {
-                        // settings.setSetting("Media/rotationAngle",value)
-                        // videoOutput.rotation=value
-                        backend.send("rotate:"+value);
+                        backend.send(Command.ModifyRotation,value);
                     }
 
                 }
@@ -514,8 +506,7 @@ Page
                     setButtonBorderColor: "transparent"
                     onButtonClicked:
                     {
-                        console.log("repeat")
-                        backend.send("repeatToggle");
+                        backend.send(Command.RepeatToggle,"");
                     }
                 }
             }
@@ -537,8 +528,7 @@ Page
                     setButtonBorderColor: "transparent"
                     onButtonClicked:
                     {
-                        console.log("previous track")
-                        backend.send("previousToggle");
+                        backend.send(Command.PreviousToggle,"");
                     }
                 }
 
@@ -553,9 +543,7 @@ Page
                     setButtonBorderColor: "transparent"
                     onButtonClicked:
                     {
-                        console.log("play/pause")
-                        backend.send("playToggle");
-                        // backend.send(Cmd.PlayToggle);
+                        backend.send(Command.PlayToggle,"");
                     }
                 }
 
@@ -569,16 +557,10 @@ Page
                     setButtonBorderColor: "transparent"
                     onButtonClicked:
                     {
-                        backend.send("nextToggle");
+                        backend.send(Command.NextToggle,"");
                     }
                 }
             }
-
-            // Slider
-            // {
-            //     width: parent.width
-            //     height:60
-            // }
 
 
             Rectangle
@@ -612,7 +594,7 @@ Page
                         value: 0//root.mediaPlayer.position / root.mediaPlayer.duration
 
                         anchors.centerIn: parent
-                        onMoved: backend.send("seeker:"+value)//root.mediaPlayer.setPosition(value * root.mediaPlayer.duration)
+                        onMoved:  backend.send(Command.ModifyPosition,value);
                     }
                     Label
                     {

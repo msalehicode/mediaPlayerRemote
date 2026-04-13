@@ -14,13 +14,17 @@
 #include <QPermissions>
 #endif
 
-#include "btSocket.h"
-
+#include "btSocket.h" //bluetooth socket
+#include "ntSocket.h" //network socket
 
 #include <QBluetoothLocalDevice> //to get device bluetooth is off or on
 #include <QDateTime>
 
 #include "settingsmanager.h"
+
+#include "commandhandler.h"
+
+#include <QSysInfo>
 
 enum class BtStatus
 {
@@ -62,7 +66,7 @@ public:
 
 
 
-    // void processCommand(CommandHandler::Command cmd, const QString& value);
+    void processCommand(QByteArray data);
 
 
 
@@ -75,11 +79,14 @@ public:
 
     Q_INVOKABLE void scan(bool status);
     Q_INVOKABLE void send(QString message);
-    // Q_INVOKABLE void send(CommandHandler::Command cmd, const QString& value="");
+    Q_INVOKABLE void send(CommandHandler::Command cmd, QString value);
+
     Q_INVOKABLE void connectToBluetoothHost(QString hostName);
 
     Q_INVOKABLE void connectToBluetoothByAddress(QString name, QString address);
     Q_INVOKABLE void reconnectToRecentDevice();
+
+    Q_INVOKABLE void connectToNetworkByAddress(QString name, QString address);
 
     Q_INVOKABLE QString getVersion();
 
@@ -108,7 +115,8 @@ signals:
     // void dataChanged();
 
 
-    void sendMessage(QString text);
+    void sendMessage(const QString& text);
+    void sendData(QByteArray data);
 
 
     void targetDeviceChanged();
@@ -118,6 +126,10 @@ signals:
     void devicesChanged();
 
     void receivedMessageChanged();
+
+    void showPasswordDialog();
+    void wrongPassword();
+    void hidePasswordDialog();
 
 public slots:
     void discoveryFinished();
@@ -137,6 +149,9 @@ public slots:
 
 
 private:
+    QString getPlatform();
+    QString getArchitecture();
+
     const int m_currentAdapterIndex;
     QString m_targetDevice;
     BtStatus m_btStatus;
@@ -150,8 +165,9 @@ private:
     QBluetoothDeviceInfo connectedDevice;//to hold passing device to socket
 
     BtSocket* m_socket;
-    // CommandHandler m_command;
+    CommandHandler m_command;
 
+    NtSocket* m_netSocket;
     // QVariantMap m_data;//store remote control data
 
     SettingsManager* m_settings;

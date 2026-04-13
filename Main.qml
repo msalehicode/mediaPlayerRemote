@@ -3,6 +3,7 @@ import QtQuick.Controls
 import "./Pages"
 import "./CustomComponents"
 import "./Pages/scripts.js" as Script
+import MyCommands //enum from CommandHandler. call enum like:  Command.Something
 
 ApplicationWindow
 {
@@ -15,7 +16,12 @@ ApplicationWindow
 
     onClosing:
     {
-        if(mainStack.depth>1)
+        if(passwordBase.visible)//Dialog Password is shown. first hide it on next actions pop stack
+        {
+            passwordBase.cancelPassword();
+            close.accepted = false;
+        }
+        else if(mainStack.depth>1)
         {
             if(mainStack.currentItem.objectName==="ControlPage")
             {
@@ -163,6 +169,92 @@ ApplicationWindow
         phoneControl.setStatusBarColor(darkerColor[0], darkerColor[1], darkerColor[2]);
     }
 
+    Rectangle
+    {
+        id: passwordBase
+        anchors.fill: parent
+        visible: false
+        color:"black"
+        Rectangle
+        {
+            color:"transparent"
+            width: parent.width
+            height: 222
+            anchors.verticalCenter: parent.verticalCenter
+            Column
+            {
+                width: parent.width/1.50
+                height: parent.height
+                spacing: 20
+                anchors.horizontalCenter: parent.horizontalCenter
+                Label
+                {
+                    text:"Password Required"
+                    font.pixelSize: 20
+                    color:"white"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+                CustomTextInput
+                {
+                    id:enteredPassword
+                    setTitleText: "Enter password"
+                    setWidth: parent.width
+                    setHeight: 60
+                    setBgColor: "white"
+                    setFontColor: "black"
+                    onTheTextAccepted:passwordBase.sendPass()
+
+                }
+                Row
+                {
+                    spacing: 20
+                    width: parent.width/1.5
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    CustomButton
+                    {
+                        setButtonText: "Cancel"
+                        setWidth: 70
+                        setHeight: 45
+                        setButtonsBorderWidth:0
+                        setBold:true
+                        setButtonFontColor: "white"
+                        setButtonBackColor: "red"
+                        onButtonClicked:passwordBase.cancelPassword()
+                    }
+                    CustomButton
+                    {
+                        setButtonText: "Ok"
+                        setWidth: 70
+                        setHeight: 45
+                        setButtonsBorderWidth:0
+                        setBold:true
+                        setButtonFontColor: "white"
+                        setButtonBackColor: "green"
+                        onButtonClicked:passwordBase.sendPass();
+                    }
+
+                }
+
+
+            }
+
+
+
+        }
+
+
+        function cancelPassword()
+        {
+            passwordBase.visible=false;
+            enteredPassword.clear()
+            backend.disconnectFromHost();
+        }
+        function sendPass()
+        {
+            backend.send(Command.EnterPassword,enteredPassword.theText)
+        }
+    }
+
     Connections
     {
         target:backend
@@ -202,6 +294,9 @@ ApplicationWindow
                     rootWindow.setConnectionStatus("Disconnected")
                     mainStack.popToIndex(0) //go to initItem (ConnectionPage)
                     // because it has already disconnected.. (maybe host/device-bluetooth/bluetooth=permission turned off)
+
+                    //reset and hide passwordBase
+                    passwordBase.cancelPassword();
                     break;
 
                 case 31: rootWindow.setConnectionStatus("Scanning");break;
@@ -228,6 +323,22 @@ ApplicationWindow
                 }
             }
 
+        }
+
+
+        onShowPasswordDialog: //if server ask password, will emit this.
+        {
+            passwordBase.visible=true
+        }
+
+        onHidePasswordDialog: //password accepted.
+        {
+            passwordBase.visible=false
+            enteredPassword.clear()
+        }
+        onWrongPassword:
+        {
+            enteredPassword.invalidInput("wrong password.");
         }
     }
 

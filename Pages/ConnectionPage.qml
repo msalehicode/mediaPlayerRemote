@@ -6,7 +6,6 @@ Page
 {
     anchors.fill: parent
     objectName:"ConnectionPage"
-    // readonly property var connectionModes: ["Bluetooth", "Network"]
 
     Rectangle
     {
@@ -166,7 +165,7 @@ Page
                 setTextColor: "black"
                 setBgContent: "grey"
                 setTextFontSize: 20
-                setOpen: true
+                setOpen: false
                 setContentHeight: 300
                 anchors.horizontalCenter: parent.horizontalCenter
                 onCollapsed: scanBluetoothPanel.setHeight = setOpen ? setContentHeight+60 : 60
@@ -284,55 +283,147 @@ Page
                 }
             }
 
-            // Label
-            // {
-            //     text:"received log:"
-            //     font.pixelSize: 20
-            //     color:"white"
-            // }
-            // Rectangle
-            // {
-            //     color:"green"
-            //     width:parent.width
-            //     height:200
-            //     clip:true
-            //     Label
-            //     {
-            //         text:backend.receivedMessage
-            //         font.pixelSize: 20
-            //         color:"white"
-            //     }
-            // }
 
-            // custom
-            // CustomTextInput
-            // {
-            //     id:textInput
-            //     setWidth: parent.width
-            //     setHeight: 70
-            //     setBgColor: "purple"
-            //     setTitleText: "custom command:"
-            //     CustomButton
-            //     {
-            //         setWidth: parent.width/5
-            //         setHeight: parent.height/2
-            //         anchors
-            //         {
-            //             right:parent.right
-            //             verticalCenter: parent.verticalCenter
-            //         }
+            CustomCollapsiblePanel
+            {
+                id:directNetworkConnectionPanel
+                setWidth: parent.width/1.10
+                anchors.horizontalCenter: parent.horizontalCenter
+                setHeight:60
+                setTitle: "Network Direct Connection:"
+                setBgColorButton: "white"
+                setTextColor:"black"
+                setBgContent: "grey"
+                setTextFontSize: 20
+                setOpen: true
+                setContentHeight: 350
+                onCollapsed: directNetworkConnectionPanel.setHeight = setOpen ? setContentHeight+60 : 60
 
-            //         setButtonText: "Send"
-            //         setButtonBackColor: "black"
-            //         setButtonFontColor: "red"
-            //         onButtonClicked:
-            //         {
-            //             backend.send(textInput.theText)
-            //             textInput.theText=""
-            //         }
+                Rectangle
+                {
+                    width:parent.width
+                    height:350
+                    color:"transparent"
+                    Column
+                    {
+                        width: parent.width
+                        height:parent.height
+                        spacing:15
+                        anchors
+                        {
+                            top:parent.top
+                            topMargin:15
+                        }
 
-            //     }
-            // }
+
+                        Rectangle
+                        {
+                            width:parent.width
+                            height:50
+                            color:"red"
+                            CustomTextInput
+                            {
+                                id:directConnectionNetworkName
+                                setWidth: parent.width/1.5
+                                setHeight: 50
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                setTitleText: "Enter custom name:"
+                            }
+                        }
+
+
+                        // Text
+                        // {
+                        //     text:"Enter network address:"
+                        //     color: "white"
+                        //     height: 7
+                        //     width: parent.width/1.25
+                        //     anchors.horizontalCenter: parent.horizontalCenter
+                        //     font.pixelSize: 20
+                        //     font.bold: true
+                        // }
+
+                        // Row
+                        // {
+                            // anchors.horizontalCenter: parent.horizontalCenter
+                            // CustomTextInputForMacAddress
+                            // {
+                            //     id:directConnectionNetworkIpAddress
+                            //     setWidth: parent.width/2
+                            //     setHeight: 50
+                            //     inputFieldCount: 4
+                            //     maxCharacterInField: 3
+                            //     setJoinCharacter: "."
+                            //     defualtCharValueInCaseWasInvalid:"0"
+                            // }
+
+                        Rectangle
+                        {
+                            width:parent.width
+                            height:50
+                            color:"blue"
+                            CustomTextInput
+                            {
+                                id:directConnectionNetworkIp
+                                setWidth: parent.width/1.5
+                                setHeight: 50
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                setTitleText: "Enter ip:"
+                            }
+                        }
+
+
+                        Rectangle
+                        {
+                            width:parent.width
+                            height:50
+                            color:"yellow"
+                            CustomTextInput
+                                {
+                                    id:directConnectionNetworkPort
+                                    setWidth: parent.width/1.5
+                                    setHeight: 50
+                                    setTitleText: "port:"
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                        }
+
+                        // }
+
+
+                        CustomButton
+                        {
+                            setWidth: parent.width
+                            setHeight: 60
+                            // anchors
+                            // {
+                            //     right:parent.right
+                            //     verticalCenter: parent.verticalCenter
+                            // }
+
+                            setButtonText: "Connect"
+                            setButtonBackColor: "black"
+                            setButtonFontColor: "red"
+                            onButtonClicked:
+                            {
+                                var name= (directConnectionNetworkName.theText.length<=0) ? "Device" : directConnectionNetworkName.theText
+                                var addr= directConnectionNetworkIp.theText +":" +directConnectionNetworkPort.theText
+
+                                backend.connectToNetworkByAddress(name,addr)
+                                // directConnectAddress.enteredAddress=""
+                                // directConnectName.clear()
+                            }
+
+                        }
+
+
+
+                    }
+
+                }
+            }
+
+
 
 
         }

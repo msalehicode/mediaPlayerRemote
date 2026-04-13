@@ -91,7 +91,8 @@ signals:
 
 
 public slots:
-    void sendMessage(QString text)
+
+    void sendMessage(const QString& text)
     {
         qInfo() << "socket sending message (" << text << ")";
         if (!m_socket)
@@ -102,10 +103,42 @@ public slots:
 
          //Crucial before send data. need string closer to determind where it ends. (\0)
         if(!text.endsWith("\n"))
-            text+="\n";
+        {
+            QString newText = text+"\n";
+            QByteArray msg = newText.toUtf8();
+            m_socket->write(msg);
+            return;
+        }
 
         QByteArray msg = text.toUtf8();
         m_socket->write(msg);
+    }
+
+    void sendData(QByteArray data)
+    {
+        qInfo() << "socket: sending QByteArray data=(" << data << ")";
+        if (!m_socket)
+        {
+            qWarning() << "sendMessage: m_socket is null!";
+            return;
+        }
+
+        // --- Check connection state ---
+        if (m_socket->state() != QBluetoothSocket::SocketState::ConnectedState) {
+            qWarning() << "sendMessage: Socket is not connected. Cannot send message.";
+            // Optionally, queue the message to be sent later
+            // e.g., add to a QList<QString> pendingMessages;
+            return;
+        }
+        else
+            qInfo() << "socket state:" <<m_socket->state();
+
+
+        if (!data.endsWith('\n') || !data.endsWith("\r\n")) {
+            data += '\n'; // Append newline if not present
+        }
+
+        m_socket->write(data);
     }
 
 private slots:

@@ -3,16 +3,42 @@ cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(APP_CURRENT_VERSION "0.8.0")
-set(APP_CURRENT_VERSION_CODE 080)
+set(APP_CURRENT_VERSION "0.9.0")
+set(APP_CURRENT_VERSION_CODE 090)
 set(APP_TitleName "Media Player Remote")
 set(APP_OrganizationName "orgMediaPlayer")
 set(APP_ApplicationName "appMediaPlayerRemote")
 
+
+# -- logic to separate android and linux
+if(CMAKE_TOOLCHAIN_FILE)
+    # Check if the toolchain file is for Android
+    string(FIND "${CMAKE_TOOLCHAIN_FILE}" "android.toolchain.cmake" toolchain_pos)
+    if(toolchain_pos GREATER -1)
+        set(ANDROID TRUE)
+        message(">>> Detected Android cross-compilation via toolchain file.")
+    endif()
+endif()
+
+set(APP_BUILD_PLATFORM "unknown")
+if (ANDROID)
+    set(APP_BUILD_PLATFORM "android")
+elseif (WIN32)
+    set(APP_BUILD_PLATFORM "windows")
+elseif (APPLE AND NOT IOS)
+    set(APP_BUILD_PLATFORM "macos")
+elseif (IOS)
+    set(APP_BUILD_PLATFORM "ios")
+elseif (UNIX AND NOT APPLE AND NOT ANDROID)
+    set(APP_BUILD_PLATFORM "linux")
+endif()
+
+
+
 project(mediaPlayerRemote VERSION ${APP_CURRENT_VERSION} LANGUAGES CXX)
 
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Bluetooth Core)
+find_package(Qt6 REQUIRED COMPONENTS Quick Bluetooth Core Network)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -51,6 +77,7 @@ qt_add_qml_module(appmediaPlayerRemote
 
         #icons
         RESOURCES icons/bluetooth.png icons/wifi.png
+        SOURCES ntSocket.h
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -72,13 +99,15 @@ set_target_properties(appmediaPlayerRemote PROPERTIES
     QT_ANDROID_VERSION_NAME "${APP_CURRENT_VERSION}"
 )
 
-# add_subdirectory(../CommandHandler ../../build/CommandHandler_build)
+add_subdirectory(../CommandHandler ${CMAKE_BINARY_DIR}/CommandHandler)
+
 
 target_link_libraries(appmediaPlayerRemote
     PRIVATE Qt6::Quick
     Qt6::Bluetooth
+    Qt6::Network
     Qt6::Core
-    # CommandHandler
+    CommandHandler
 )
 
 # Get current build date/time for backend.getVersion()
@@ -88,6 +117,8 @@ string(TIMESTAMP BUILD_DATE "%Y-%m-%d" UTC)
 # announce cmake variables to Cpp side
 target_compile_definitions(appmediaPlayerRemote PRIVATE
     APP_VERSION="${APP_CURRENT_VERSION}"
+    APP_VERSION_CODE="${APP_CURRENT_VERSION_CODE}"
+    APP_BUILD_PLATFORM="${APP_BUILD_PLATFORM}"
     APP_TITLE="${APP_TitleName}"
     APP_ORGANIZATION="${APP_OrganizationName}"
     APP_NAME="${APP_ApplicationName}"

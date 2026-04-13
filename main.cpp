@@ -5,6 +5,8 @@
 #include "settingsmanager.h"
 #include "androidcontrol.h"
 
+#include "commandhandler.h"
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -13,6 +15,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QString::fromUtf8(APP_ORGANIZATION));
     QCoreApplication::setApplicationName(QString::fromUtf8(APP_NAME));
     QCoreApplication::setApplicationVersion(QString::fromUtf8(APP_VERSION));
+
+    qmlRegisterUncreatableType<CommandHandler>("MyCommands", 1, 0, "Command", "Enums only");
 
 
     QQmlApplicationEngine engine;
