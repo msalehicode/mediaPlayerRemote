@@ -5,12 +5,11 @@
 
 #include <QGuiApplication>
 
-#include "btagent.h"
+#include "btagent.h" //to do discover nearby bluetooth devices
 
-// #include "commandhandler.h"
 
+//it is curial
 #if QT_CONFIG(permissions)
-// #include <QCoreApplication>
 #include <QPermissions>
 #endif
 
@@ -24,7 +23,7 @@
 
 #include "commandhandler.h"
 
-#include <QSysInfo>
+#include <QSysInfo> //to get system info and send to server as CLientInfo
 
 enum class BtStatus
 {
@@ -54,90 +53,70 @@ class Backend : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString targetDevice READ targetDevice WRITE setTargetDevice NOTIFY targetDeviceChanged)
     Q_PROPERTY(BtStatus btStatus READ getBtStatus WRITE setBtStatus NOTIFY btStatusChanged FINAL)
     Q_PROPERTY(QList<QString> devices READ devices WRITE setDevices NOTIFY devicesChanged FINAL)
-    Q_PROPERTY(QString receivedMessage READ receivedMessage WRITE setReceivedMessage NOTIFY receivedMessageChanged FINAL)
-    // Q_PROPERTY(QVariantMap data READ data NOTIFY dataChanged)
 
+    // Q_PROPERTY(NOTIFY remoteDataChanged)
 
 public:
     explicit Backend(QGuiApplication* app, SettingsManager* settings, QObject *parent = nullptr);
 
+    void processCommand(QByteArray data); //process received command
 
+    Q_INVOKABLE QString getVersion() const; //to show app version in UI
 
-    void processCommand(QByteArray data);
-
-
-
-    QString targetDevice() const;
-    void setTargetDevice(const QString &newtargetDevice);
-
-
-    BtStatus getBtStatus() const;
-    void setBtStatus(BtStatus newBtStatus);
-
-    Q_INVOKABLE void scan(bool status);
+    //for both network and bluetooth
+    Q_INVOKABLE void reconnectToRecentDevice();
+    Q_INVOKABLE void disconnectFromHost();
     Q_INVOKABLE void send(QString message);
     Q_INVOKABLE void send(CommandHandler::Command cmd, QString value);
+    void sendClientInfo();
 
-    Q_INVOKABLE void connectToBluetoothHost(QString hostName);
 
-    Q_INVOKABLE void connectToBluetoothByAddress(QString name, QString address);
-    Q_INVOKABLE void reconnectToRecentDevice();
-
+    //network
     Q_INVOKABLE void connectToNetworkByAddress(QString name, QString address);
 
-    Q_INVOKABLE QString getVersion();
-
-    Q_INVOKABLE void disconnectFromHost();
-
+    //bluetooth
     Q_INVOKABLE void checkPermission();
     Q_INVOKABLE void isBluetoothOn();
-
+    Q_INVOKABLE void scan(bool status);
+    Q_INVOKABLE void connectToBluetoothHost(QString hostName);
+    Q_INVOKABLE void connectToBluetoothByAddress(QString name, QString address);
+    BtStatus getBtStatus() const;
+    void setBtStatus(BtStatus newBtStatus);
     QList<QString> devices() const;
     void setDevices(const QList<QString> &newDevices);
     void setDevices(QString newDevices);
 
-    QString receivedMessage() const;
-    void setReceivedMessage(QString newReceivedMessage);
 
-
-    void updateStatusBarColor();
-
-    // QVariantMap data() const;
-    // Q_INVOKABLE void setData(CommandHandler::Command key, const QString &value);
-    // void initData();
 
 
 signals:
-
-    // void dataChanged();
-
-
     void sendMessage(const QString& text);
     void sendData(QByteArray data);
+    void receivedMessageChanged();
 
 
-    void targetDeviceChanged();
+    //bluetooth
+    void devicesChanged();
     void btStatusChanged();
 
 
-    void devicesChanged();
-
-    void receivedMessageChanged();
-
+    //password dialog
     void showPasswordDialog();
     void wrongPassword();
     void hidePasswordDialog();
 
+    //to tell qml data received do things on his way
+    void remoteDataChanged(CommandHandler::Command cmd, QString val);
+    void showPopupMessage(QString message);
+
 public slots:
+
+    //bluetooth
     void discoveryFinished();
     void discoveryCanceled();
     void newDeviceFound(QString key);
-
-
-
     void onBluetoothStateChanged(QBluetoothLocalDevice::HostMode state);
 
 
@@ -149,30 +128,26 @@ public slots:
 
 
 private:
-    QString getPlatform();
-    QString getArchitecture();
-
+    //bluetooth
     const int m_currentAdapterIndex;
-    QString m_targetDevice;
     BtStatus m_btStatus;
     BtAgent* m_btAgent;
-
-    QString m_receivedMessage;
     QList<QString> m_devices;
-
     QGuiApplication* m_app; //for bluetooth permission
-
     QBluetoothDeviceInfo connectedDevice;//to hold passing device to socket
-
     BtSocket* m_socket;
-    CommandHandler m_command;
-
-    NtSocket* m_netSocket;
-    // QVariantMap m_data;//store remote control data
-
-    SettingsManager* m_settings;
-
     QBluetoothLocalDevice* m_localDevice; //get blueooth state is on/off..
+
+
+    //network
+    NtSocket* m_netSocket;
+
+
+    //--
+    CommandHandler m_command;
+    SettingsManager* m_settings;
+    QString getPlatform();
+    QString getArchitecture();
 };
 
 #endif // BACKEND_H

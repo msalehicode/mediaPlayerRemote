@@ -100,8 +100,8 @@ public slots:
             qWarning() << "sendMessage: Socket is not connected. Cannot send message.";
             return;
         }
-        else
-            qInfo() << "socket state:" <<m_socket->state();
+        // else
+            // qDebug() << "socket state:" <<m_socket->state();
 
 
         if (!data.endsWith('\n') || !data.endsWith("\r\n"))

@@ -10,15 +10,32 @@ Backend::Backend(QGuiApplication* app, SettingsManager *settings, QObject *paren
     m_localDevice(nullptr),
     m_netSocket(nullptr)
 {
-    // initData();
 
 }
 
 void Backend::processCommand(QByteArray data)
 {
-    QString value;
-    switch(m_command.unpack(data,value))
+    QString payload;
+    CommandHandler::Command cmd = m_command.unpack(data,payload);
+    switch(cmd)
     {
+        case CommandHandler::Command::VersionIsOutDated:
+        case CommandHandler::Command::VersionNotProvided:
+            emit showPopupMessage("update program your version is outdated");
+            break;
+        case CommandHandler::Command::Banned:
+            emit showPopupMessage("you have been banned");
+            break;
+        case CommandHandler::Command::Kicked:
+            emit showPopupMessage("you have been kicked");
+            break;
+        case CommandHandler::Command::ConnectionLost:
+            emit showPopupMessage("connection lost, you might have been idle");
+            break;
+        case CommandHandler::Command::AlreadyConnected:
+            emit showPopupMessage("your address already exists, run this app only once.");
+            break;
+
         case CommandHandler::Command::EnterPassword:
             emit showPasswordDialog();
             break;
@@ -28,10 +45,43 @@ void Backend::processCommand(QByteArray data)
         case CommandHandler::Command::AthenticatedFine:
             emit hidePasswordDialog();
             break;
+        case CommandHandler::Command::MediaPlayerData: //initial data from server.
+        {
+            // qDebug() << "RAW MediaPlayerData-payload:" << payload;
+            QList<QVariant> unpackedPayloads = m_command.unpackPayload(payload);
+
+            if(unpackedPayloads.size() < CommandHandler::commandKeyMap.keys().count())
+            {
+                qDebug() <<"mediaPlayerData is not proper."
+                         << "unpackedPayloads size:" << unpackedPayloads.size()
+                         << " commandKeyMap count="<< CommandHandler::commandKeyMap.keys().count()
+                         << " unpackedPayloads data="<< unpackedPayloads;
+
+
+                emit showPopupMessage("Failed to load initial data\nTry again..");
+                disconnectFromHost();
+                return;
+            }
+            // else
+                // qDebug() <<"mediaPlayerData is FINE,";
+
+            //find command of that key and call QML slot to apply data to UI
+            int index=0;
+            for (const QString &key : CommandHandler::commandKeyMap.keys())
+            {
+                qDebug() << "index before i:"<<index;
+                CommandHandler::Command command = CommandHandler::commandKeyMap.value(key);
+                emit remoteDataChanged(command, unpackedPayloads[index++].toString());
+                qDebug() << "index after i:"<<index;
+            }
+        }break;
+        default: //undefined command, LATER avoid emitting.
+            emit remoteDataChanged(cmd, payload);
     }
+        qDebug() << "end of processCommand.";
 }
 
-QString Backend::getVersion()
+QString Backend::getVersion() const
 {
     //version and build macro from cmake
     QString result;
@@ -41,35 +91,6 @@ QString Backend::getVersion()
     return result;
 }
 
-
-// void Backend::processCommand(CommandHandler::Command  cmd, const QString &value)
-// {
-//     switch(cmd)
-//     {
-//         case CommandHandler::Command::PlayToggle:
-//         {
-//             setData(cmd,value);
-//         }
-
-//         default:
-//         {
-//             qInfo() <<"undefined command.";
-//         }
-//     }
-// }
-
-QString Backend::targetDevice() const
-{
-    return m_targetDevice;
-}
-
-void Backend::setTargetDevice(const QString &newConnetedDevice)
-{
-    if (m_targetDevice == newConnetedDevice)
-        return;
-    m_targetDevice = newConnetedDevice;
-    emit targetDeviceChanged();
-}
 
 void Backend::scan(bool status)
 {
@@ -138,6 +159,30 @@ void Backend::send(CommandHandler::Command cmd, QString value)
 {
     qInfo () << "seding data : " << cmd << "Val= " << value;
     emit sendData(m_command.pack(cmd,value));
+}
+
+void Backend::sendClientInfo()
+{
+    QList<QVariant> dataToPack;
+
+    //obey ENUM's order (CommandHandler::ClientInfoIndexes)
+    dataToPack << QString::fromUtf8(APP_VERSION_CODE);
+    dataToPack << QSysInfo::machineHostName();
+    dataToPack << QString::fromUtf8(APP_BUILD_PLATFORM);
+    dataToPack << QString::fromUtf8(BUILD_DATE_TIME);
+    dataToPack << getArchitecture();
+    dataToPack << QSysInfo::prettyProductName();
+    dataToPack << QSysInfo::kernelType();
+    dataToPack << QSysInfo::kernelVersion();
+    dataToPack << QSysInfo::currentCpuArchitecture();
+    dataToPack << QSysInfo::buildAbi();
+    dataToPack << QString::fromUtf8(APP_VERSION);
+    // dataToPack << getPlatform(); //doesnt work proper, android and linux are not same! it return androids ->linux
+
+    QString payload = m_command.packPayload(dataToPack);
+
+    //send client info to server.such as app version, client system info...
+    emit sendData(m_command.pack(CommandHandler::Command::ClientInfo,payload));
 }
 
 
@@ -443,6 +488,7 @@ QString Backend::getArchitecture()
     #endif
 }
 
+
 QString Backend::getPlatform()
 {
     #ifdef Q_OS_WIN
@@ -461,31 +507,20 @@ QString Backend::getPlatform()
 
 void Backend::connected()
 {
-    qInfo() << "backend: connected";
+    qDebug() << "backend: connected";
     setBtStatus(BtStatus::Connected);
 
-    //send client info to server.such as app version, client system info...
-    //splited by `
-    QString info;
-    info += QString::fromUtf8(APP_VERSION_CODE);
-    // info += "`"+ QString::fromUtf8(APP_VERSION);
-    info += "`"+ QSysInfo::machineHostName();
-    info += "`"+ QString::fromUtf8(APP_BUILD_PLATFORM);
-    // info += "`"+ getPlatform(); //doesnt work proper, android and linux are not same! it return android ->linux
-    info += "`"+ QString::fromUtf8(BUILD_DATE_TIME);
-    info += "`"+ getArchitecture();
-    info += "`"+ QSysInfo::prettyProductName();
-    info += "`"+ QSysInfo::kernelType();
-    info += "`"+ QSysInfo::kernelVersion();
-    info += "`"+ QSysInfo::currentCpuArchitecture();
-    info += "`"+ QSysInfo::buildAbi();
-    emit sendData(m_command.pack(CommandHandler::Command::ClientInfo,info));
+
+    //send client's info to server such as app-version, device-name, device technical info..
+    //server in response to this wil ask password
+    //OR if password were not required will reply a inital status of latest status of mediaplayer to set to QML components
+    sendClientInfo();
 }
 
 
 void Backend::disconnected()
 {
-    qInfo() << "backend: disconnected";
+    qDebug() << "backend: disconnected";
     setBtStatus(BtStatus::Disconnected);
 }
 
@@ -499,11 +534,9 @@ void Backend::messageReceived(QByteArray data)
     }
 
 
-    // qInfo() << "backend: message received (data) = " << data;
-    // QString message =QString::fromUtf8(data);
-    // qInfo() << "backend: messagerecived:" << message;
-
-    // setReceivedMessage(message);
+    qInfo() << "backend: message received (data) = " << data;
+    QString message =QString::fromUtf8(data);
+    qInfo() << "backend: messagerecived:" << message;
 
     processCommand(data);
 }
@@ -511,52 +544,7 @@ void Backend::messageReceived(QByteArray data)
 void Backend::error(QString errorDescription)
 {
     qWarning() << "backend: erorr from bt socket" << errorDescription;
-    // if()
     setBtStatus(BtStatus::Failed);
-}
-
-
-// QVariantMap Backend::data() const
-// {
-//     return m_data;
-// }
-
-// void Backend::setData(CommandHandler::Command key, const QString &value)
-// {
-//     QString keystr = m_command.commandToString(key);
-//     // QVariant keyVariant = QVariant::fromValue(key);
-//     if (m_data.contains(keystr) && m_data.value(keystr) != value)
-//     {
-//         if (!keystr.isEmpty())
-//         {
-//             m_data[keystr] = value;
-//             qDebug() << "data changed " << keystr << "=" << value;
-//         }
-//         else
-//         {
-//             qDebug() << "Warning data: no key mapping found for key:" << keystr;
-//         }
-
-//         emit dataChanged();
-//     }
-//     else
-//         qInfo()<<"key not defined or value not changed.";
-// }
-
-// void Backend::initData()
-// {
-//     m_data[m_command.commandToString(CommandHandler::Command::PlayToggle)] = "0";
-// }
-
-QString Backend::receivedMessage() const
-{
-    return m_receivedMessage;
-}
-
-void Backend::setReceivedMessage(QString newReceivedMessage)
-{
-    m_receivedMessage.append(newReceivedMessage);
-    emit receivedMessageChanged();
 }
 
 QList<QString> Backend::devices() const
@@ -577,7 +565,6 @@ void Backend::setDevices(QString newDevices)
     m_devices.append(newDevices);
     emit devicesChanged();
 }
-
 
 
 

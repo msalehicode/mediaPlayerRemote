@@ -37,7 +37,7 @@ Page
                     id: connectionModeIcon
                     width: 20
                     height: 20
-                    source: settings.value["recentDevice/type"]==="bluetooth"?  "icons/bluetooth.png" : "icons/wifi.png"
+                    source: settings.value["recentDevice/type"]==="bluetooth"?  "../icons/bluetooth.png" : "../icons/wifi.png"
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Label
@@ -320,7 +320,7 @@ Page
                         {
                             width:parent.width
                             height:50
-                            color:"red"
+                            color:"transparent"
                             CustomTextInput
                             {
                                 id:directConnectionNetworkName
@@ -361,7 +361,7 @@ Page
                         {
                             width:parent.width
                             height:50
-                            color:"blue"
+                            color:"transparent"
                             CustomTextInput
                             {
                                 id:directConnectionNetworkIp
@@ -377,7 +377,7 @@ Page
                         {
                             width:parent.width
                             height:50
-                            color:"yellow"
+                            color:"transparent"
                             CustomTextInput
                                 {
                                     id:directConnectionNetworkPort

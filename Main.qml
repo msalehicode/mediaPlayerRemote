@@ -21,6 +21,12 @@ ApplicationWindow
             passwordBase.cancelPassword();
             close.accepted = false;
         }
+        else if(popupMessage.visible)
+        {
+            popupMessage.visible=false
+            close.accepted = false;
+        }
+
         else if(mainStack.depth>1)
         {
             if(mainStack.currentItem.objectName==="ControlPage")
@@ -54,6 +60,7 @@ ApplicationWindow
                 height: 20
                 source: settings.value["recentDevice/type"]==="bluetooth"?  "icons/bluetooth.png" : "icons/wifi.png"
                 anchors.verticalCenter: parent.verticalCenter
+                visible: backend.btStatus!==-1 //dont show it when status is unknown
             }
             Label
             {
@@ -64,7 +71,7 @@ ApplicationWindow
                 font.bold: true
                 width: implicitWidth
                 height: parent.height
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
             }
         }
 
@@ -157,7 +164,7 @@ ApplicationWindow
 
 
     function setConnectionStatus(statusText,statusColor="")
-    {
+    {         
         connectionStatusLabel.text = statusText;
 
         if(statusColor==="")//deduce color
@@ -255,9 +262,42 @@ ApplicationWindow
         }
     }
 
+
+    Rectangle
+    {
+        id:popupMessage
+        anchors.fill: parent
+        color:"black"
+        visible: false
+        Label
+        {
+            id:popupMessageLabel
+            text:""
+            color:"white"
+            font.pixelSize: 20
+            anchors.centerIn: parent
+            wrapMode: "Wrap"
+        }
+        CustomButton
+        {
+            setWidth: 70
+            setHeight: 40
+            setButtonText: "OK"
+            onButtonClicked: popupMessage.visible=false
+            anchors.top: popupMessageLabel.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+    }
+
     Connections
     {
         target:backend
+        onShowPopupMessage: function(msg)
+        {
+            popupMessage.visible=true;
+            popupMessageLabel.text=msg
+        }
+
         onBtStatusChanged:
         {
             console.log("bt status changed: " + backend.btStatus)
@@ -272,10 +312,12 @@ ApplicationWindow
                     rootWindow.setConnectionStatus("Permission Denied");
                     popupBluetoothError.show("Go to settings give permission \nbluetooth (nearby devices) to app",true)
                 }break;
+
                 case 21:
                     rootWindow.setConnectionStatus("Asking Permission");
                     popupBluetoothError.show("Give bluetooth permission",true)
                     break;
+
                 case 22:
                     rootWindow.setConnectionStatus("Permission Granted");
                     backend.isBluetoothOn() //lets check bluetooth is on/off
@@ -283,10 +325,12 @@ ApplicationWindow
 
                 case 23:
                     rootWindow.setConnectionStatus("Bluetooth is Off")
-                    popupBluetoothError.show("Turn on your bluetooth",false,true)
+                    if(settings.value["recentDevice/type"]==="bluetooth") //only when connection is bluetooth.
+                        popupBluetoothError.show("Turn on your bluetooth",false,true)
                     break;
 
-                case 24: rootWindow.setConnectionStatus("bluetooth is on"); //bluetooth is ON. & permission has granted
+                case 24:
+                    rootWindow.setConnectionStatus("bluetooth is on"); //bluetooth is ON. & permission has granted
                     popupBluetoothError.hide()
                     break;
 

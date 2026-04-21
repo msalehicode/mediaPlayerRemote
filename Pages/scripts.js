@@ -54,3 +54,38 @@ b = Math.max(0, Math.min(255, b));
 return [r,g,b]
 }
 
+function asFloat(value) {
+    if (value === undefined || value === null) return 0.0;
+
+    const num = Number(value);
+    return isNaN(num) ? 0.0 : num;
+}
+
+function asInt(value)
+{
+    if (value === undefined || value === null)
+        return 0;
+
+    return Number(value)
+}
+
+
+function asBool(value) {
+    if (typeof value === "boolean")
+        return value
+
+    if (typeof value === "number")
+        return value !== 0
+
+    if (typeof value === "string") {
+        const v = value.trim().toLowerCase()
+        if (["true", "1", "yes", "on"].includes(v))
+            return true
+        if (["false", "0", "no", "off", ""].includes(v))
+            return false
+    }
+
+    // fallback: anything else → false
+    return false
+}
+

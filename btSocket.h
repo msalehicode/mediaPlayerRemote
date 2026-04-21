@@ -52,34 +52,6 @@ public:
 
         m_socket->connectToService(m_device->address(), serviceUuid);
 
-
-        // connect(m_socket, &QBluetoothSocket::connected, this, [this]()
-        // {
-        //     qDebug() << "Internal QBluetoothSocket connected! Emitting BtSocket::connected().";
-        //     emit connected();
-        // });
-
-        // connect(m_socket, &QBluetoothSocket::disconnected, this, [this]()
-        //         {
-        //             emit disconnected();
-        //         });
-
-        // connect(m_socket, &QBluetoothSocket::readyRead, this, [this]()
-        //         {
-        //             emit messageReceived(m_socket->readAll());
-        //         });
-
-        // connect(m_socket, &QBluetoothSocket::errorOccurred, this, [this](QBluetoothSocket::SocketError err)
-        //         {
-        //             qInfo()<< "socket error occured:" << err;
-        //             // emit error(errorToString(err));
-
-        //             if(m_socket)
-        //                 emit error(m_socket->errorString());
-        //             else
-        //                 qInfo() << "msocket is nullptr..";
-        //         });
-
     }
 
 
@@ -161,7 +133,7 @@ private slots:
     void sDataReceived()
     {
         QByteArray data = m_socket->readAll();
-        // qInfo() << "socket Received:" << data;
+        qInfo() << "btsocket Received:" << data;
         emit messageReceived(data);
     }
 

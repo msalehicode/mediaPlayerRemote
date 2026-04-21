@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(APP_CURRENT_VERSION "0.9.0")
-set(APP_CURRENT_VERSION_CODE 090)
+set(APP_CURRENT_VERSION "1.0.7")
+set(APP_CURRENT_VERSION_CODE 107)
 set(APP_TitleName "Media Player Remote")
 set(APP_OrganizationName "orgMediaPlayer")
 set(APP_ApplicationName "appMediaPlayerRemote")
@@ -78,6 +78,10 @@ qt_add_qml_module(appmediaPlayerRemote
         #icons
         RESOURCES icons/bluetooth.png icons/wifi.png
         SOURCES ntSocket.h
+        QML_FILES Pages/GeneralControl.qml
+        QML_FILES Pages/SubtitleControl.qml
+        RESOURCES icons/Add_file.svg icons/Add_file_Dark.svg icons/back.png icons/Cancel_Button.svg icons/Error.svg icons/Forward_icon.png icons/Forward_icon_Dark.png icons/FullScreen_Icon.svg icons/FullScreen_Icon_Dark.svg icons/Load_Button.svg icons/Loop_Icon.svg icons/Loop_Icon_Dark.svg icons/Loop_Playlist.svg icons/Menu_Icon.svg icons/Menu_Icon_Dark.svg icons/Mute_Icon.svg icons/Mute_Icon_Dark.svg icons/Next_Icon.svg icons/Next_Icon_Dark.svg icons/Play_Icon.svg icons/Playlist_Active.svg icons/Playlist_Icon.svg icons/Playlist_Icon_Dark.svg icons/Previous_Icon.svg icons/Previous_Icon_Dark.svg icons/Rate_Icon.svg icons/Rate_Icon_Dark.svg icons/Settings_Icon.svg icons/Settings_Icon_Dark.svg icons/Shuffle_Active.svg icons/Shuffle_Icon.svg icons/Shuffle_Icon_Dark.svg icons/Single_Loop.svg icons/Stop_Icon.svg icons/Trash_Icon.svg icons/Trash_Icon_Dark.svg icons/Volume_Icon.svg icons/Volume_Icon_Dark.svg
+        QML_FILES CustomComponents/CustomAdvanceSlider.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
