@@ -513,44 +513,42 @@ Item
             Rectangle
             {
                 id:baseMediaSlider
+                visible: false
                 color: "black"
                 width: parent.width
                 height:60
-                Row
+                property int mediaDuration:0;
+                property int mediaCurrent:0;
+                Label
                 {
-                    anchors.fill: parent
-                    Label
-                    {
-                        id:mediaTotalLengthLabel
-                        text:"1:20:33"
-                        color: q_fontColor
-                        font.pixelSize: 15
-                    }
-                    CustomSlider {
-                        id: mediaSlider
-                        backgroundColor: "#41CD52"
-                        backgroundOpacity: 0.8
-                        width: parent.width/1.5
-                        height: 50
-                        enabled:true
-                        to: 1.0
-                        value: 0
+                    id:mediaTotalLengthLabel
+                    text:"duration"
+                    color: q_fontColor
+                    font.pixelSize: 15
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                CustomSlider {
+                    id: mediaSlider
+                    backgroundColor: "#41CD52"
+                    backgroundOpacity: 0.8
+                    width: parent.width/1.5
+                    height: 50
+                    enabled:true
+                    to: 1.0
+                    value: baseMediaSlider.mediaCurrent / baseMediaSlider.mediaDuration
 
-                        anchors.centerIn: parent
-                        onMoved:  backend.send(Command.ModifyPosition,value);
-                    }
-                    Label
-                    {
-                        id:mediaPassedLengthLabel
-                        text:"20:33"
-                        color: q_fontColor
-                        font.pixelSize: 15
-                        anchors
-                        {
-                            right:parent.right
-                            verticalCenter: parent.verticalCenter
-                        }
-                    }
+                    anchors.centerIn: parent
+                    onMoved:  backend.send(Command.ModifyPosition,(value * baseMediaSlider.mediaDuration));
+                }
+                Label
+                {
+                    id:mediaCurrentLengthLabel
+                    text:"current"
+                    color: q_fontColor
+                    font.pixelSize: 15
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
                 }
             }
 
@@ -559,6 +557,12 @@ Item
     }
 
 
+    function getTime(time : int) : string {
+        const h = Math.floor(time / 3600000).toString()
+        const m = Math.floor(time / 60000).toString()
+        const s = Math.floor(time / 1000 - m * 60).toString()
+        return `${h.padStart(2,'0')}:${m.padStart(2,'0')}:${s.padStart(2, '0')}`
+    }
     Connections
     {
         target: backend
@@ -566,8 +570,42 @@ Item
         {
             switch(cmd)
             {
+                case Command.ModifyPosition: //current position changed!
+                    payload=Script.asInt(payload)
+                    if(payload>=0)
+                    {
+                        baseMediaSlider.mediaCurrent=payload; //save same no visual current
+                        mediaCurrentLengthLabel.text=getTime(payload) //visual current like 1:20:00
+                        baseMediaSlider.visible=true
+                    }
+                    else
+                        baseMediaSlider.visible=false
+                break;
+
                 case Command.CurrentMediaMeta: //later include other metaData...
-                    currentFileNameLabel.text=payload
+
+                    console.log("metadata received= ",payload)
+
+                    var separatedArray = payload.split("`");
+
+                    var filename = separatedArray[1];
+                    var duration = separatedArray[2];
+
+                    //make sure we have a proper file name
+                    if(filename.length>0 && filename!=="current file name")
+                        currentFileNameLabel.text=filename
+
+                    //make sure duration is fine!
+                    if(duration>=0)
+                    {
+                        baseMediaSlider.mediaDuration=duration; //save same no visual duration
+                        mediaTotalLengthLabel.text=getTime(duration) //visual duration like 1:20:00
+                        baseMediaSlider.visible=true
+                    }
+                    else
+                        baseMediaSlider.visible=false
+
+
                     break;
                 case Command.ModifyRotation:
                     rotationDial.value=Script.asInt(payload)

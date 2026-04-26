@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(APP_CURRENT_VERSION "1.0.7")
-set(APP_CURRENT_VERSION_CODE 107)
+set(APP_CURRENT_VERSION "1.0.8")
+set(APP_CURRENT_VERSION_CODE 108)
 set(APP_TitleName "Media Player Remote")
 set(APP_OrganizationName "orgMediaPlayer")
 set(APP_ApplicationName "appMediaPlayerRemote")

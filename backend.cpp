@@ -69,10 +69,18 @@ void Backend::processCommand(QByteArray data)
             int index=0;
             for (const QString &key : CommandHandler::commandKeyMap.keys())
             {
-                qDebug() << "index before i:"<<index;
                 CommandHandler::Command command = CommandHandler::commandKeyMap.value(key);
-                emit remoteDataChanged(command, unpackedPayloads[index++].toString());
-                qDebug() << "index after i:"<<index;
+                if(key=="1")//consists media metadata so need to unpackPayload
+                {
+                    QList<QVariant> unpackedPayload = m_command.unpackPayload(unpackedPayloads[index++].toString());
+                    QString strPayload;
+                    for(auto& v: unpackedPayload)
+                        strPayload+="`"+v.toString();
+                    qInfo() << "strPayload:" << strPayload;
+                    emit remoteDataChanged(command, strPayload);
+                }
+                else
+                    emit remoteDataChanged(command, unpackedPayloads[index++].toString());
             }
         }break;
         default: //undefined command, LATER avoid emitting.
