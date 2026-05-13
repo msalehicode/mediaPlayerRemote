@@ -50,7 +50,7 @@ void Backend::processCommand(QByteArray data)
             // qDebug() << "RAW MediaPlayerData-payload:" << payload;
             QList<QVariant> unpackedPayloads = m_command.unpackPayload(payload);
 
-            if(unpackedPayloads.size() < CommandHandler::commandKeyMap.keys().count())
+            if(unpackedPayloads.size() < CommandHandler::commandKeyMap.keys().count()-1)
             {
                 qDebug() <<"mediaPlayerData is not proper."
                          << "unpackedPayloads size:" << unpackedPayloads.size()

@@ -201,7 +201,7 @@ Item
                 id:brigthnessBase
                 width:50
                 height:100
-                color:"black"
+                color:"transparent"
                 Row
                 {
                     spacing:5
@@ -217,6 +217,7 @@ Item
                             setButtonBackColor: "black"
                             setButtonFontColor: q_fontColor
                             setRadius: 10
+                            setButtonFontsize: 30
                             setButtonBorderColor: "transparent"
                             onButtonClicked: backend.send(Command.BrightnessUp,"");
                         }
@@ -229,24 +230,25 @@ Item
                             setButtonBackColor: "black"
                             setButtonFontColor: q_fontColor
                             setRadius: 10
+                            setButtonFontsize: 30
                             setButtonBorderColor: "transparent"
                             onButtonClicked: backend.send(Command.BrightnessDown,"");
                         }
                     }
-                    Rectangle {
-                        id: brightnessIndicator
-                        width: 20
-                        height: 100
-                        color: "#888"
-                        radius: 8
-                        clip:true
+                    // Rectangle {
+                    //     id: brightnessIndicator
+                    //     width: 20
+                    //     height: 100
+                    //     color: "#888"
+                    //     radius: 8
+                    //     clip:true
 
-                        Rectangle {
-                            width: parent.width
-                            height: brightnessIndicator.height //* (1.0 - root.brightness)
-                            color: "#ff0"
-                        }
-                    }
+                    //     Rectangle {
+                    //         width: parent.width
+                    //         height: brightnessIndicator.height //* (1.0 - root.brightness)
+                    //         color: "#ff0"
+                    //     }
+                    // }
 
                 }
 
@@ -291,24 +293,24 @@ Item
                 id:volumeBase
                 width:50
                 height:100
-                color:"black"
+                color:"transparent"
                 Row
                 {
                     spacing:5
-                    Rectangle {
-                        id: volumeIndicator
-                        width: 20
-                        height: 100
-                        color: "#888"
-                        radius: 8
-                        clip:true
+                    // Rectangle {
+                    //     id: volumeIndicator
+                    //     width: 20
+                    //     height: 100
+                    //     color: "#888"
+                    //     radius: 8
+                    //     clip:true
 
-                        Rectangle {
-                            width: parent.width
-                            height: volumeIndicator.height //* root.volume
-                            color: "#0f0"
-                        }
-                    }
+                    //     Rectangle {
+                    //         width: parent.width
+                    //         height: volumeIndicator.height //* root.volume
+                    //         color: "#0f0"
+                    //     }
+                    // }
                     Column
                     {
                         spacing: 5
@@ -321,6 +323,7 @@ Item
                             setButtonBackColor: "black"
                             setButtonFontColor: q_fontColor
                             setRadius: 10
+                            setButtonFontsize: 30
                             setButtonBorderColor: "transparent"
                             onButtonClicked: backend.send(Command.VolumeUp,"");
                         }
@@ -333,6 +336,7 @@ Item
                             setButtonBackColor: "black"
                             setButtonFontColor: q_fontColor
                             setRadius: 10
+                            setButtonFontsize: 30
                             setButtonBorderColor: "transparent"
                             onButtonClicked: backend.send(Command.VolumeDown,"");
                         }
@@ -359,39 +363,6 @@ Item
             //     to: 50
             // }
 
-
-            Label
-            {
-                text:"mprisControl:"
-                color:q_fontColor
-            }
-            CustomSwitch
-            {
-                id: mprisControl
-                onSwitchClicked: backend.send(Command.MprisControlToggle, switchStatus)
-            }
-
-            Label
-            {
-                text:"steady on audioOutput:"
-                color:q_fontColor
-            }
-            CustomSwitch
-            {
-                id: steadyOnAudioOutput
-                onSwitchClicked: backend.send(Command.SteadyAudioDeviceToggle, switchStatus)
-            }
-
-            Label
-            {
-                text:"custom Cursor:"
-                color:q_fontColor
-            }
-            CustomSwitch
-            {
-                id: customCursor
-                onSwitchClicked: backend.send(Command.CustomCursorStatusToggle, switchStatus)
-            }
 
         }
 
@@ -499,7 +470,7 @@ Item
                     setIconHeight: iconH
                     setIconWidth: iconW
                     setIconSource: "icons/Next_Icon_Dark.svg"
-                    setButtonText: ">"
+                    // setButtonText: ">"
                     setWidth: 70
                     setHeight: 50
                     setButtonBackColor: "black"
@@ -621,17 +592,6 @@ Item
                         playPauseButton.setIconSource="icons/Play_Icon.svg";
                     else
                         playPauseButton.setIconSource="icons/Stop_Icon.svg";
-                    break;
-                case Command.MprisControlToggle:
-                    mprisControl.changeStatus(Script.asBool(payload))
-                    break;
-
-                case Command.SteadyAudioDeviceToggle:
-                    steadyOnAudioOutput.changeStatus(Script.asBool(payload))
-                    break;
-
-                case Command.CustomCursorStatusToggle:
-                    customCursor.changeStatus(Script.asBool(payload))
                     break;
 
                 // case Command.BrightnessDown:
